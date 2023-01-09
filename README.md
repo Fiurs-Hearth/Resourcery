@@ -40,7 +40,24 @@ patch-I.mpq/Interface/FrameXML
 To conjure (create) frames you use the function:  
 `resourcery.StartConjuring(tableData, mergeTableData)`  
 `tableData` is a table with frame data.  
-`mergeTableData` is a table with frame data that will merge with `tableData`.
+`mergeTableData` is a table with frame data that will merge with `tableData`.  
+  
+Example:  
+```
+-- Will create a basic frame and name it "testFrame"
+resourcery.StartConjuring({
+  templates={"basic_window"},
+  name="testFrame"
+})
+
+frameData={
+  templates={"basic_window"},
+  name="testFrame"
+}
+resourcery.StartConjuring(frameData, {
+  strings.title.text="A cool new frame"
+})
+```
 
   
 ### Creating templates  
