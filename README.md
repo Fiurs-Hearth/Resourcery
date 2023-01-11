@@ -194,4 +194,25 @@ resourcery.StartConjuring({
   templates={"basic_window"},
   name="testFrame"
 })
-```
+```  
+  
+### Duplicate feature  
+You can use the `duplicate` feature to duplicate settings of another frame/string/texture in the same contained table.  
+For example:  
+```lua
+strings={
+    title={
+       point={"TOPLEFT", "$parent", "TOPLEFT",0,-12},
+       size={"$parent", 24},
+       font={size=14},
+       text="Example frame"
+    },
+   secondText={
+      duplicate="title",
+      point={[1]="TOPLEFT",[3]="LEFT"},
+      text="TEST"
+   }
+}
+```  
+Here we duplicate the data of 'title' into 'secondText' and then we overwrite some of that data.  
+
