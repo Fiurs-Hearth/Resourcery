@@ -238,3 +238,20 @@ With `size` you can fetch a frame's X or Y size by doing this:
 ```  
 With `parent` you can use `$parent`, used for when you have subframes but it will default to parent anyway so its used to clarify.  
 With `point['relative_frame']` you can use `$parent`.
+  
+### Scripts  
+You can add scripts like this:  
+```lua
+button={
+  templates={"blizz_button"},
+  
+  scripts={
+      -- 
+      OnClick=function()
+        print("Button clicked!")
+      end
+  }
+  
+  
+}
+```
