@@ -215,4 +215,26 @@ strings={
 }
 ```  
 Here we duplicate the data of 'title' into 'secondText' and then we overwrite some of that data.  
-
+You can do this with frames, strings and textures.  
+  
+### Macros  
+With some frame type attributes you can use macros to fetch data.  
+With `name` you can use `$parent` to get the parent frame's name and you can add more text to it:  
+```lua
+{
+  templates={"basic_window"},
+  name="$parent_subFrame" -- if the parent's name is "frame_test" then the name will become "frame_test_subFrame"
+}
+```
+With `size` you can fetch a frame's X or Y size by doing this:  
+```lua
+{
+  templates={"basic_window"},
+  size={
+    x="$parent", -- Gets the width of the parent frame.
+    y="$PlayerFrame + $parent - 35" -- Gets Height of PlayerFrame, add with the parent frame and subtracts that result with 35.
+  }
+}
+```  
+With `parent` you can use `$parent`, used for when you have subframes but it will default to parent anyway so its used to clarify.  
+With `point['relative_frame']` you can use `$parent`.
