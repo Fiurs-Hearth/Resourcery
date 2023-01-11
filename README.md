@@ -97,26 +97,30 @@ backdrop={
     top = 12,
     bottom = 11,
   }
-}```  
+}
+```  
 Or you can do this:  
 ```lua
 backdrop={ 
   "Interface\\DialogFrame\\UI-DialogBox-Background",
   "Interface\\DialogFrame\\UI-DialogBox-Border"
-}```  
+}
+```  
 The table values follow the same order as the function so in this case the first one is the `bgFile` and the second one is `edgeFile` but their key is `[1]` and `[2]`.  
 You can also set specific key values like this:  
 ```lua
 backdrop={ 
   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
   edgeSize = 12
-}```  
+}
+```  
 Or like this:  
 ```lua
 backdrop={ 
   [2] = "Interface\\DialogFrame\\UI-DialogBox-Background",
   [3] = 12
-}```  
+}
+```  
 Resourcery will prioritize key-value pairs over index-value pairs.  
 For example, if backdrop's key named `edgeFile`is set but also the index key `[2]` is set then it will prioritize the named key.
   
