@@ -246,11 +246,10 @@ button={
   templates={"blizz_button"},
   
   scripts={
-      -- 
       OnClick=function()
         print("Button clicked!")
       end,
-      OnLeave=myFunction()
+      OnLeave=myFunction
   }
 }
 ```  
@@ -260,7 +259,6 @@ frameData={
   templates={"blizz_button"},
   
   scripts={
-      -- 
       OnEvent=function(self, event, unit)
         if(event == "UNIT_HEALTH" and unit == "player") then
           print("Your health changed!")
@@ -269,7 +267,6 @@ frameData={
       events={
         "UNIT_HEALTH"
       }
-      OnLeave=myFunction()
   }
 }
 ```
