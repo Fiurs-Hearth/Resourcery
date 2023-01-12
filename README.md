@@ -1,5 +1,5 @@
 # Resourcery
-A framework prototype
+A framework prototype (for wotlk 3.3.5)
 
 ## Introduction
 I was tired of creating UI with XML and the standard WoW API so I created this as a test to feel around a bit.  
