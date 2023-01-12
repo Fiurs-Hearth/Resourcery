@@ -83,6 +83,15 @@ If you want to use for example:
 `frame:SetFrameStrata("BORDER")`  
 Then you write `frame_strata="BORDER"`.  
   
+Resourcery will try and default values that you otherwise must type in to use.  
+For example:  
+```lua
+frameData={
+  size={x=100}
+}
+```  
+In this example it will default the 'y' value to either the frame's current height.
+  
 If you want to use a function that accepts multiple arguments (for example `frame:SetBackdrop`) then you can do this:  
 ```lua
 backdrop={
@@ -272,7 +281,7 @@ frameData={
 ```
   
 ### AIO Usage
-You can create/edit frames live for all online players if you run the code as a GM like this:  
+With AIO we can create/edit frames live for all online players if you run the code as a GM like this:  
 ```lua
 local data = {
    templates={"basic_window"},
@@ -286,7 +295,19 @@ local data = {
 }
 AIO.Handle("AIO_resourcery", "UpdateUI", data)
 ```  
-You can make changes to the data and then update the target frame live as well.  
+It is also possible to make changes to the data and then update the target frame live as well.  
 You can NOT add functions through the AIO method (at least to my knowledge).  
 One option is to create the functions before and add that function to a template and then add it to the client's patch.  
-I have done this with the function: `resourcery.StartServerCountdown()`.
+I have done this with the function: `resourcery.StartServerCountdown()`.  
+  
+### Extra attributes
+There are some extra attributes you can use when writing data for a frame.  
+For example:  
+```lua
+frameData={
+  moveable=true
+}
+```  
+This will make the frame moveable. Also works with using `clamped` and its values.  
+  
+If you use `disabled = true` then you can temporarily disable a frame or a texture.
