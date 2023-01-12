@@ -249,9 +249,27 @@ button={
       -- 
       OnClick=function()
         print("Button clicked!")
-      end
+      end,
+      OnLeave=myFunction()
   }
+}
+```  
+You can register and use events like this:  
+```lua
+frameData={
+  templates={"blizz_button"},
   
-  
+  scripts={
+      -- 
+      OnEvent=function(self, event, unit)
+        if(event == "UNIT_HEALTH" and unit == "player") then
+          print("Your health changed!")
+        end
+      end,
+      events={
+        "UNIT_HEALTH"
+      }
+      OnLeave=myFunction()
+  }
 }
 ```
