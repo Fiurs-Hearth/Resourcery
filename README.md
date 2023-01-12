@@ -270,3 +270,23 @@ frameData={
   }
 }
 ```
+  
+### AIO Usage
+You can create/edit frames live for all online players if you run the code as a GM like this:  
+```lua
+local data = {
+   templates={"basic_window"},
+   name="aio_window",
+   
+   strings={
+      title={
+         text="Created via AIO"
+      }
+   }
+}
+AIO.Handle("AIO_resourcery", "UpdateUI", data)
+```  
+You can make changes to the data and then update the target frame live as well.  
+You can NOT add functions through the AIO method (at least to my knowledge).  
+One option is to create the functions before and add that function to a template and then add it to the client's patch.  
+I have done this with the function: `resourcery.StartServerCountdown()`.
