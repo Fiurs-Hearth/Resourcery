@@ -4,7 +4,7 @@ A framework prototype (for wotlk 3.3.5)
 ![resoucery](https://user-images.githubusercontent.com/97316608/212414504-04eb15e7-b912-4d77-b372-be024c9b4d57.png)  
 
 ## Introduction
-I was tired of creating UI with XML and the standard WoW API so I created this as a test to feel around a bit.  
+I was tired of creating UI with XML and the standard WoW API so I created this as a test to see if this was fun to work with.  
 With Resourcery you can create Lua templates, more or less the same as the XML templates.  
   
 As this is a prototype, not all frame types are supported (yet).  
