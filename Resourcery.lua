@@ -93,7 +93,6 @@ function resourcery.ApplyDuplicateSettings(newData, tableData)
         resourcery.ApplyDuplicateSettings(targetData, tableData)
     end
     newData = resourcery.ApplyTableData(newData, targetData)
-
     return newData
 end
 
@@ -160,7 +159,7 @@ function resourcery.ConstructBase(frame, data, parentData)
     end
     -- :SetSize()
     frame:SetSize((frame:GetWidth() or 0), (frame:GetHeight() or 0)) -- default to 0,0 if no size
-    if(data.size and data.size['x'] and data.size['y'] or data.size and data.size[1] and data.size[2]) then      
+    if(data.size and data.size['x'] and data.size['y'] or data.size and data.size[1] and data.size[2]) then
         frame:SetSize(unpack(resourcery.ParseSizes((data.size['x'] or data.size[1]), (data.size['y'] or data.size[2]), frame)))
     end
     -- :SetPoint()
@@ -170,19 +169,29 @@ function resourcery.ConstructBase(frame, data, parentData)
             frame:ClearAllPoints()
         end
 
+        -- Find $parent and replace it with parent name.
+        if( type(data.point['relative_frame']) == "string" and string.find(data.point['relative_frame'], "$parent") )then
+            data.point['relative_frame'] = data.point['relative_frame'].gsub(data.point['relative_frame'], "$parent", frame:GetParent():GetName())
+        elseif( type(data.point[2]) == "string" and string.find(data.point[2], "$parent")  )then
+            data.point[2] = data.point[2].gsub(data.point[2], "$parent", frame:GetParent():GetName())
+        end
+
         frame:SetPoint(
             (data.point['anchor_point'] or data.point[1] or "CENTER"),
             (
                 (type(data.point['relative_frame']) == "string" and _G[data.point['relative_frame']]) or data.point['relative_frame']
-                or _G[data.point[2]] or data.point[2]
+                or _G[data.point[2]] or (type(data.point[2]) ~= "number" and data.point[2])
                 or frame:GetParent() 
             ),
-            (data.point['relative_point'] or data.point[3] or (data.point['anchor_point'] or data.point[1] or "CENTER")),
-            (data.point['ofsx'] or data.point[4] or 0), 
-            (data.point['ofsy'] or data.point[5] or 0)
+            (data.point['relative_point'] or (type(data.point[3]) == "string" and data.point[3]) or (data.point['anchor_point'] or data.point[1] or "CENTER")),
+            (data.point['x'] or (type(data.point[2]) == "number" and data.point[2]) or data.point[4] or 0),  
+            (data.point['y'] or (type(data.point[3]) == "number" and data.point[3]) or data.point[5] or 0)
         )
+
     else
-        frame:SetPoint("TOPLEFT", 0, 0)
+        if( not(frame:GetPoint()) )then
+            frame:SetPoint("TOPLEFT", 0, 0)
+        end
     end
     -- :SetID()
     if(data.id)then
@@ -355,7 +364,7 @@ function resourcery.ConstructTypeTexture(tex, data)
         )
     end
     -- :SetDrawLayer()
-    if(data.draw_layer and false) then
+    if(data.draw_layer) then
         tex:SetDrawLayer(data.draw_layer)
     end
     -- :SetBlendMode()
@@ -402,7 +411,7 @@ function resourcery.ConstructTypeTexture(tex, data)
     end
     -- :SetTexCoord()
     if(data.tex_coord)then
-        if(type(data.tex_coord) and #data.tex_coord > 4) then
+        if(#data.tex_coord > 4) then
             tex:SetTexCoord(
                 (data.tex_coord.ULx or data.tex_coord[1] or 0),
                 (data.tex_coord.ULy or data.tex_coord[2] or 1),
@@ -413,7 +422,7 @@ function resourcery.ConstructTypeTexture(tex, data)
                 (data.tex_coord.LRx or data.tex_coord[7] or 0),
                 (data.tex_coord.LRy or data.tex_coord[8] or 1)
             )
-        elseif(type(data.tex_coord)) then
+        else
             tex:SetTexCoord(
                 (data.tex_coord.left   or data.tex_coord[1] or 0),
                 (data.tex_coord.right  or data.tex_coord[2] or 1),
@@ -531,7 +540,7 @@ function resourcery.ConstructTypeString(str, data)
     end
 end
 
-function resourcery.ConstructTypeButton()
+function resourcery.ConstructTypeButton(frame, data)
 
     --[[
         :Disable()              disable
@@ -539,6 +548,8 @@ function resourcery.ConstructTypeButton()
         :LockHighlight()        lock_highlight
         :UnlockHightlight()     unlock_highlight
     ]]
+
+    -- TODO: When normal texture is set and not the others, use normal texture as default for others
 
     -- :Disable()
     if(data.disable) then
@@ -570,47 +581,47 @@ function resourcery.ConstructTypeButton()
             (data.button_state['lock']  or data.button_state[2] or false) 
         )
     end
+    -- :SetNormalTexture()
+    if(data.normal_texture)then
+        frame:SetNormalTexture((_G[data.normal_texture] or data.normal_texture))
+    end
     -- :SetDisabledFontObject()
     if(data.disabled_font) then
         frame:SetDisabledFontObject(_G[data.disabled_font])
     end
     -- :SetDisabledTexture()
-    if(data.disabled_texture) then
-        frame:SetDisabledTexture(data.disabled_texture)
+    if(data.disabled_texture or data.normal_texture) then
+        frame:SetDisabledTexture(_G[data.disabled_texture] or data.disabled_texture or data.normal_texture)
     end
     -- :SetFontString()
     if(data.font) then
         frame:SetFontString(_G[data.font])
     end
     -- :SetHighlightTexture()
-    if(data.highlight_texture) then
+    if(data.highlight_texture or data.normal_texture) then
         if( type(data.highlight_texture) == "table" and next(data.highlight_texture) )then
             frame:SetHighlightTexture(
-                (data.highlight_texture['file'] or data.highlight_texture[1]),
+                (data.highlight_texture['file'] or data.highlight_texture[1] or data.normal_texture),
                 (data.highlight_texture['mode'] or data.highlight_texture[2])
             )
         else
-            frame:SetHighlightTexture(data.highlight_texture)
+            frame:SetHighlightTexture(_G[data.highlight_texture] or data.highlight_texture or data.normal_texture)
         end
     end
     -- :SetNormalFontObject()
     if(data.normal_font)then
         frame:SetNormalFontObject(_G[data.normal_font])
     end
-    -- :SetNormalTexture()
-    if(data.normal_texture)then
-        frame:SetNormalTexture((_G[data.normal_texture] or data.normal_texture))
-    end
     -- :SetPushedTextOffset()
-    if(data.pushed_offset)then
+    if(data.pushed_text_offset)then
         frame:SetPushedTextOffset(
-            (data.pushed_offset['x'] or data.pushed_offset[1] or 0),
-            (data.pushed_offset['y'] or data.pushed_offset[2] or 0)
+            (data.pushed_text_offset['x'] or data.pushed_text_offset[1] or 0),
+            (data.pushed_text_offset['y'] or data.pushed_text_offset[2] or 0)
         )
     end
     -- :SetPushedTexture()
-    if(data.pushed_texture)then
-        frame:SetPushedTexture((_G[data.pushed_texture] or data.pushed_texture))
+    if(data.pushed_texture or data.normal_texture) then
+        frame:SetPushedTexture((_G[data.pushed_texture] or data.pushed_texture or data.normal_texture))
     end
     -- :SetText()
     if(data.text)then
@@ -623,25 +634,34 @@ function resourcery.ConjureFrame(data, parentData)
         
     -- Check if data aleady exists
     local frame
+        
+    -- Find $parent and replace it with parent name.
+    if(data.name and string.find(data.name, "$parent") and parentData.name)then
+        data.name = data.name.gsub(data.name, "$parent", parentData.name)
+    end
+
     if(_G[data.name] ) then
         frame = _G[data.name]
     else
-        if( not(data.frame_type) ) then
+        if( not(data.type) ) then
             print("No frame type for: "..(data.name or "Unknown"))
             return
         end
 
-        -- Find $parent and replace it with parent name.
-        if(data.name and string.find(data.name, "$parent") and parentData.name)then
-            data.name = data.name.gsub(data.name, "$parent", parentData.name)
-        end
-
         frame = CreateFrame(
-            data.frame_type, 
+            data.type, 
             (data.name or nil ), 
             (_G[data.parent] or _G[(parentData and parentData.name)] or UIParent), 
             (data.inherits or nil)
         )
+    end
+
+    -- Add variables to the frame object
+    if(data.vars and next(data.vars))then
+        frame.vars = {}
+        for k,v in pairs(data.vars) do
+            frame.vars[k] = v
+        end
     end
 
     -- Base main frame
@@ -650,20 +670,31 @@ function resourcery.ConjureFrame(data, parentData)
     if(data.type == "Button") then
         resourcery.ConstructTypeButton(frame, data)
     end
-    
+
+    -- Scripts
+    if(data.scripts and next(data.scripts))then
+        for k,v in pairs(data.scripts) do
+            if(k == "events")then
+                for kk,vv in pairs(v) do
+                    frame:RegisterEvent(vv)
+                end
+            else
+                frame:SetScript(k, v)
+            end
+        end
+    end
+
     -- Textures
     if( data.textures and next(data.textures) )then
         
-        frame.textures = CreateFrame("Frame", data.name.."_Textures", frame)
-        frame.textures:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-        frame.textures:SetSize(frame:GetWidth(), frame:GetHeight())
-        frame.textures:SetFrameLevel(frame.textures:GetParent():GetFrameLevel())
+        if(not(frame.textures))then
+            frame.textures={}
+        end
 
         for k, textureData in pairs(data.textures)do
-            if(textureData.name)then
-                frame.textures[k] = frame.textures:CreateTexture(data.name.."_Textures_"..textureData.name)
-            else
-                frame.textures[k] = frame.textures:CreateTexture(data.name.."_Textures_"..k)
+
+            if( not( _G[data.name.."_Textures_"..(textureData.name or k)] ) )then
+                frame.textures[k] = frame:CreateTexture(data.name.."_Textures_"..(textureData.name or k))
             end
             local tex = frame.textures[k] 
             
@@ -676,13 +707,13 @@ function resourcery.ConjureFrame(data, parentData)
     -- Strings
     if(data.strings and next(data.strings))then
 
-        frame.strings = {}
+        if(not(frame.strings))then
+            frame.strings = {}
+        end
 
         for k, strData in pairs(data.strings)do
-            if(strData.name)then
-                frame.strings[k] = frame:CreateFontString(data.name.."_Strings_"..strData.name)
-            else
-                frame.strings[k] = frame:CreateFontString(data.name.."_Strings_"..k)
+            if( not( _G[data.name.."_Strings_"..(strData.name or k)] )) then
+                frame.strings[k] = frame:CreateFontString(data.name.."_Strings_"..(strData.name or k))
             end
             local string = frame.strings[k] 
             
@@ -693,7 +724,10 @@ function resourcery.ConjureFrame(data, parentData)
     end
 
     if( data.frames and next(data.frames) )then
-        frame.frames = {}
+
+        if(not(frame.frames))then
+            frame.frames = {}
+        end
         for k, v in pairs(data.frames)do
             frame.frames[k] = resourcery.ConjureFrame(v, data)
         end
@@ -702,13 +736,14 @@ function resourcery.ConjureFrame(data, parentData)
     return frame
 end
 
--- Prepare all frames by applying their template and/or duplicate settings.
-function resourcery.PrepareAllFrames()
+-- Create all frames from table.
+function resourcery.CreateAllFrames(frames)
 
-    for k, data in pairs(resourcery.frames) do
-
+    local framesTable = {}
+    for k, data in pairs(frames) do
+         framesTable[k] = resourcery.StartConjuring(data)
     end
-
+    return framesTable
 end
 
 -- Prepare a frame and its childrens by applying templates and/or duplicate settings.
@@ -740,11 +775,23 @@ function resourcery.PrepareFrame(newData, frameData)
             end
         end
     end
+
+    -- Apply duplicate string settings 
+    if(newData.strings and next(newData.strings)) then
+        for k, stringData in pairs(newData.strings) do
+            if(stringData.duplicate) then
+                resourcery.ApplyDuplicateSettings(stringData, newData.strings)
+            end
+        end
+    end
  
-    -- Loop through all child frames of current frame and apply template settings.
+    -- Loop through all child frames of current frame and apply template and duplicate settings.
     if(newData.frames and next(newData.frames)) then
         for k, sub_newData in pairs(newData.frames) do
             newData.frames[k] = resourcery.PrepareFrame(sub_newData, newData.frames[k])
+            if(sub_newData.duplicate) then
+                resourcery.ApplyDuplicateSettings(sub_newData, newData.frames)
+            end
         end
     end
 
@@ -768,5 +815,3 @@ function resourcery.StartConjuring(frameData, overwriteData)
 
     return frame
 end
-
--- TODO: CreateAllFrames function

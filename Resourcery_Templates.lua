@@ -3,20 +3,74 @@
 resourcery.templates = {
 
     basic_window = {
-
+        templates = {
+            "close_button"
+         },
+         type = "Frame",
+         
+         size = {x=384, y=512},
+         moveable = true,
+         
+         textures = {
+            topLeft = {
+               size = {256, 256},
+               point = {"TOPLEFT",0,0,},
+               texture = "Interface/TAXIFRAME/UI-TaxiFrame-TopLeft.blp",
+               draw_layer ="BORDER"
+            },
+            topRight = {
+               size = {128,256},
+               point = {"TOPRIGHT",0, 0},
+               texture = "Interface/TAXIFRAME/UI-TaxiFrame-TopRight.blp",
+               draw_layer ="BORDER",
+            },
+            bottomLeft = {
+               duplicate = "topLeft",
+               point={"BOTTOMLEFT", 0, 60},
+               texture = "Interface/TAXIFRAME/UI-TaxiFrame-BotLeft.blp",
+            },
+            bottomRight = {
+               duplicate = "bottomLeft",
+               size = {128},
+               point={"BOTTOMRIGHT"},
+               texture="Interface/TAXIFRAME/UI-TaxiFrame-BotRight.blp",
+            },
+            icon={
+               size={58,58},
+               point={"TOPLEFT",10,-8},
+               texture="Interface/FriendsFrame/FriendsFrameScrollIcon.blp",
+               draw_layer="BACKGROUND"
+            }
+         },
+         
+         strings = {
+            title={
+               point={"TOPLEFT", "$parent", "TOPLEFT",0,-12},
+               size={"$parent", 24},
+               font={size=14},
+               text="Example frame"
+            }
+         },
+         
+         frames = {
+            close_button = {
+               point= {x=-30, y=-8},
+               size={x=32,y=32}
+            }
+         }
     },
 
     box_lite = {
 
         name = "box_lite_template",
 
-        frame_type = "Frame",
+        type = "Frame",
 
         size = {
             x = "$PlayerFrame",
             y = "$PlayerFrame"
         },
-
+        moveable = true,
         clamped = true,
 
         --[[
@@ -60,7 +114,7 @@ resourcery.templates = {
             "bar_base"
         },
         -- https://wowpedia.fandom.com/wiki/API_CreateFrame
-        frame_type = "Frame",
+        type = "Frame",
         name = "ThemeBarLite",
         -- https://wowpedia.fandom.com/wiki/API_Region_SetParent
         parent = "PlayerFrame",
@@ -78,8 +132,8 @@ resourcery.templates = {
             anchor_point = "TOPLEFT", 
             relative_frame = nil, 
             relative_point = nil, 
-            ofsx = 100, 
-            ofsy = -100
+            x = 100, 
+            y = -100
         },
         -- https://wowpedia.fandom.com/wiki/API_Frame_SetBackdrop
 
@@ -109,8 +163,8 @@ resourcery.templates = {
 
                 point = {
                     anchor_point = "TOPLEFT", 
-                    ofsx = 3, 
-                    ofsy = -3
+                    x = 3, 
+                    y = -3
                 },
             }
         },
@@ -134,11 +188,13 @@ resourcery.templates = {
         moveable = true
     },
 
+    -- Is a sub-frame
     close_button = {
         
         frames = {
-            close = {
-                frame_type = "Button",
+            close_button = {
+                type = "Button",
+                name = "$parent_close_button",
                 parent = "$parent",
                 inherits = "UIPanelCloseButton",
                 size = {
@@ -147,8 +203,8 @@ resourcery.templates = {
                 },
                 point = {
                     anchor_point = "TOPRIGHT",
-                    ofsx = 10,
-                    ofsy = 10
+                    x = 10,
+                    y = 10
                 },
                 raise = true
             }
@@ -156,9 +212,10 @@ resourcery.templates = {
         }
     },
 
+    -- Not a sub-frame
     close_btn = {
         
-        frame_type = "Button",
+        type = "Button",
         inherits = "UIPanelCloseButton",
         size = {
             x = 35,
@@ -166,9 +223,74 @@ resourcery.templates = {
         },
         point = {
             anchor_point = "TOPRIGHT",
-            ofsx = 10,
-            ofsy = 10
+            x = 10,
+            y = 10
         },
         raise = true
-    }
+    },
+
+    server_restart = {
+   
+        type="Frame",
+        name = "serverRestart",
+
+        size={160, 42},
+        point={"TOP",0,-5},
+        moveable=true,
+        
+        backdrop = {
+           bg_file = "Interface/Tooltips/UI-Tooltip-Background",
+           edge_file = "Interface/Tooltips/UI-Tooltip-Border",
+           edge_size = 14,
+           insets = { left = 2, right = 2, top = 2, bottom = 2 }
+        },
+        backdrop_color = {0,0,0, 0.7},
+        
+        strings = {
+           timer = {
+              font={size=14},
+              size={"$parent", "$parent"},
+              justify_h="CENTER",
+              justify_v="CENTER"
+           }
+        },
+        
+        vars={
+           time=10*60,
+        },
+        
+        scripts={
+           OnUpdate=resourcery.scripts.ServerCountdown
+        }
+    },
+
+    blizz_button = {
+        type = "Button",
+        inherits = "UIPanelButtonTemplate",
+        size = {100, 30},
+        point = {"TOPLEFT",0,0},
+        text="Button"
+    },
+    
+    frame_toggler = {
+   
+        frames = {
+           frameToggler = {
+              type = "Button",
+              name = "$parent_toggler",
+              moveable = true,
+              size = {30, 30},
+              point = {"CENTER", UIParent, "CENTER", -300, 0},
+              normal_texture = "Interface/Icons/ABILITY_SEAL.BLP",
+              
+              scripts = {
+                 OnClick = resourcery.scripts.ToggleParentFrame,
+                 OnMouseDown = resourcery.scripts.PushTexture,
+                 OnMouseUp = resourcery.scripts.ReleaseTexture
+              }
+           }
+        }
+        
+     }
+
 }
