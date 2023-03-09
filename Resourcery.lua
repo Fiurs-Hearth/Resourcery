@@ -102,16 +102,16 @@ function resourcery.ApplyTemplateSettings(newData, frameData, index)
     local templateData = {}
     -- Copy of the the template data
     templateData = resourcery.CopyTable(resourcery.templates[frameData.templates[index]]) -- << doesnt copy a table with only tables?
-
     resourcery.ApplyTableData(newData, templateData)
-
+    
     -- If template also have templates, apply its settings
-    if( templateData.templates and templateData.templates[index] and not(frameData.templates[index+1] and type(frameData.templates[index+1]) == "boolean" ) )then
+    if( templateData.templates and not(frameData.templates[index+1] and type(frameData.templates[index+1]) == "boolean" ) )then
+        local templateNr
         for i=1, #templateData.templates do
-            newData = resourcery.ApplyTemplateSettings(newData, templateData, i)
+            templateNr = (#templateData.templates - (i-1))
+            newData = resourcery.ApplyTemplateSettings(newData, templateData, templateNr)
         end
     end
-
     return newData
 end
 
@@ -137,9 +137,8 @@ function resourcery.ConstructBase(frame, data, parentData)
         end
     else
         if(data.parent == "$parent" and parentData.name)then
-            data.parent = parentData.name
+            data.parent = _G[parentData.name]
         end
-        frame:SetParent( (data.parent or (parentData and parentData.name or frame:GetParent()) or "UIParent") )
     end
     -- :SetAlpha()
     if(data.alpha) then
@@ -179,8 +178,10 @@ function resourcery.ConstructBase(frame, data, parentData)
         frame:SetPoint(
             (data.point['anchor_point'] or data.point[1] or "CENTER"),
             (
-                (type(data.point['relative_frame']) == "string" and _G[data.point['relative_frame']]) or data.point['relative_frame']
-                or _G[data.point[2]] or (type(data.point[2]) ~= "number" and data.point[2])
+                (type(data.point['relative_frame']) == "string" and _G[data.point['relative_frame']]) 
+                or data.point['relative_frame']
+                or (type(data.point[2]) == "string" and _G[data.point[2]]) 
+                or data.point[2] 
                 or frame:GetParent() 
             ),
             (data.point['relative_point'] or (type(data.point[3]) == "string" and data.point[3]) or (data.point['anchor_point'] or data.point[1] or "CENTER")),
@@ -197,10 +198,9 @@ function resourcery.ConstructBase(frame, data, parentData)
     if(data.id)then
         frame:SetID(data.id)
     end
-
 end
 
-function resourcery.ConstructTypeFrame(frame, data)
+function resourcery.ConstructTypeFrame(frame, data, parentData)
 
     --[[
         :SetFrameStrata()           frame_strata
@@ -212,7 +212,11 @@ function resourcery.ConstructTypeFrame(frame, data)
         :SetBackdropColor()         backdrop_color
         :SetBackdropBorderColor()   backdrop_border_color
         :SetHitRectInsets()         hit_rect
+        :EnableMouse()              enable_mouse
+        :EnableMouseWheel()         enable_mouse_wheel
+        :SetMovable()               movable
                                     moveable
+                                    child_to
     ]]
 
     -- :SetFrameStrata()
@@ -290,6 +294,18 @@ function resourcery.ConstructTypeFrame(frame, data)
             (data.hit_rect["bottom"] or data.hit_rect[4])
         )
     end
+    -- :EnableMouse()
+    if(data.enable_mouse)then
+        frame:EnableMouse(data.enable_mouse)
+    end
+    -- :EnableMouseWheel()
+    if(data.enable_mouse_wheel)then
+        frame:EnableMouseWheel(data.enable_mouse_wheel)
+    end
+    -- :SetMovable()
+    if(data.movable)then
+        frame:SetMovable(data.movable)
+    end
     -- Enable moveable frame
     if(data.moveable or data.clamped)then
 
@@ -318,6 +334,38 @@ function resourcery.ConstructTypeFrame(frame, data)
                     (data.clamped["bottom"] or data.clamped[4] or 0)
                 )
             end
+        end
+    end
+
+    -- child_to
+    if(data.child_to)then
+        if(data.child_to == "$parent" and parentData.name) then
+            data.child_to = _G[parentData.name]
+        end
+        local parentFrame = ( (type(data.child_to)=="string" and _G[data.child_to]) or data.child_to or (parentData and parentData.name) or frame:GetParent() )
+        local framePoint = {frame:GetPoint()}
+        parentFrame:SetScrollChild(frame)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            framePoint[1],
+            framePoint[2],
+            framePoint[3],
+            framePoint[4],
+            framePoint[5]
+        )
+    else
+        if(parentData and parentData.type == "ScrollFrame" and parentData.name) then
+            local framePoint = {frame:GetPoint()}
+            _G[parentData.name]:SetScrollChild(frame)
+            frame:ClearAllPoints()
+            frame:SetPoint(
+                framePoint[1],
+                framePoint[2],
+                framePoint[3],
+                framePoint[4],
+                framePoint[5]
+            )
+            print(frame:GetName(), ":", frame:GetParent():GetName())
         end
     end
 
@@ -433,69 +481,40 @@ function resourcery.ConstructTypeTexture(tex, data)
     end
 end
 
-function resourcery.ConstructTypeString(str, data)
+function resourcery.ConstructTypeString(str, data, parentData, isString)
 
     --[[
         :SetFont()              font
+        :SetFontObject()        font_object
+        :SetJustifyH()          justify_h
+        :SetJustifyV()          justify_v
+        :SetShadowColor()       shadow_color
+        :SetShadowOffset()      shadow_offset
+        :SetSpacing()           spacing
+        :SetTextColor()         color
+        :SetText()              text
+        
         :SetNonSpaceWrap()      non_space_wrap
         :SetWordWrap()          word_wrap
         :SetAlphaGradient()     alpha_gradient
         :SetFormattedText()     formatted_text
         :SetMultilineIndent()   multiline_indent
         :SetTextHeight()        text_height
-        :SetFontObject()        font_object
-        :SetJustifyH()          justify_h
-        :SetJustifyV()          justify_v
-        :SetShadowColor()       shadow_color
-        :SetTextColor()         color
-        :SetShadowOffset()      shadow_offset
-        :SetSpacing()           spacing
-        :SetText()              text
     ]]
+
     -- :SetFont()
-    str:SetFont(
-        ( (data.font and data.font["font_file"]) or (data.font and data.font[1]) or "Fonts\\FRIZQT__.TTF"),
-        ( (data.font and data.font["size"]) or (data.font and data.font[2]) or 12),
-        ( (data.font and data.font['flags']) or (data.font and data.font[3]) or "")
-    )
-    -- :SetNonSpaceWrap()
-    if(data.non_space_wrap) then
-        str:SetNonSpaceWrap()
-    end
-    -- :SetWordWrap()
-    if(data.word_wrap) then
-        str:SetWordWrap()
-    end
-    -- :SetAlphaGradient()
-    if(data.alpha_gradient) then
-        str:SetAlphaGradient(
-            (data.alpha_gradient["start"] or data.alpha_gradient[1] or 0),
-            (data.alpha_gradient["length"] or data.alpha_gradient[2] or (string.len(str:GetText()) - 6) (number))
+    if(data.font)then
+        str:SetFont(
+            ( (data.font and data.font["font_file"]) or (data.font and data.font[1]) or "Fonts\\FRIZQT__.TTF"),
+            ( (data.font and data.font["size"]) or (data.font and data.font[2]) or 12),
+            ( (data.font and data.font['flags']) or (data.font and data.font[3]) or "")
         )
-    end
-    -- :SetFormattedText()
-    if(data.formatted_text) then
-        if(#data.formatted_text > 1)then
-            str:SetFormattedText(
-                (data.formatted_text["format"] or data.formatted_text[1])
-            )
-        else
-            str:SetFormattedText(
-                ((type(data.formatted_text) == "string" and data.formatted_text) or unpack(data.formatted_text))
-            )
-        end
-    end
-    -- :SetMultilineIndent()
-    if(data.multiline_indent) then
-        str:SetMultilineIndent()
-    end
-    -- :SetTextHeight()
-    if(data.text_height)then
-        str:SetTextHeight(data.text_height)
     end
     -- :SetFontObject()
     if(data.font_object)then
         str:SetFontObject(data.font_object)
+    elseif(not(data.font_object) and not(data.font))then
+        str:SetFontObject(ChatFontNormal)
     end
     -- :SetJustifyH()
     if(data.justify_h)then
@@ -538,6 +557,59 @@ function resourcery.ConstructTypeString(str, data)
     if(data.text)then
         str:SetText(data.text)
     end
+    -- Check to only run if object is a string, some objects uses above functions but not the ones below.
+    if(isString)then
+        -- :SetNonSpaceWrap()
+        if(data.non_space_wrap) then
+            str:SetNonSpaceWrap()
+        end
+        -- :SetWordWrap()
+        if(data.word_wrap) then
+            str:SetWordWrap()
+        end
+        -- :SetAlphaGradient()
+        if(data.alpha_gradient) then
+            str:SetAlphaGradient(
+                (data.alpha_gradient["start"] or data.alpha_gradient[1] or 0),
+                (data.alpha_gradient["length"] or data.alpha_gradient[2] or (string.len(str:GetText()) - 6) (number))
+            )
+        end
+        -- :SetFormattedText()
+        if(data.formatted_text) then
+            if(#data.formatted_text > 1)then
+                str:SetFormattedText(
+                    (data.formatted_text["format"] or data.formatted_text[1])
+                )
+            else
+                str:SetFormattedText(
+                    ((type(data.formatted_text) == "string" and data.formatted_text) or unpack(data.formatted_text))
+                )
+            end
+        end
+        -- :SetMultilineIndent()
+        if(data.multiline_indent) then
+            str:SetMultilineIndent()
+        end
+        -- :SetTextHeight()
+        if(data.text_height)then
+            str:SetTextHeight(data.text_height)
+        end
+    end
+
+    -- Set size if none were set
+    if(data.size == nil) then
+        if(parentData ~= nil and parentData.size ~= nil) then
+            str:SetSize(
+                (parentData.size.x or parentData.size[1]),
+                (parentData.size.y or parentData.size[2])
+            )
+        else
+            str:SetSize(
+                (100),
+                (100)
+            )
+        end
+    end
 end
 
 function resourcery.ConstructTypeButton(frame, data)
@@ -548,8 +620,6 @@ function resourcery.ConstructTypeButton(frame, data)
         :LockHighlight()        lock_highlight
         :UnlockHightlight()     unlock_highlight
     ]]
-
-    -- TODO: When normal texture is set and not the others, use normal texture as default for others
 
     -- :Disable()
     if(data.disable) then
@@ -622,12 +692,362 @@ function resourcery.ConstructTypeButton(frame, data)
     -- :SetPushedTexture()
     if(data.pushed_texture or data.normal_texture) then
         frame:SetPushedTexture((_G[data.pushed_texture] or data.pushed_texture or data.normal_texture))
+        if(not(data.pushed_texture))then -- Default pushed texture.
+            local pushedTexture = frame:GetPushedTexture()
+            if(pushedTexture)then
+                pushedTexture:SetDesaturated(false)
+                pushedTexture:SetVertexColor(0,0,0)
+            end
+        end
     end
     -- :SetText()
     if(data.text)then
         frame:SetText(data.text)
     end
 
+end
+
+function resourcery.ConstructEditBox(frame, data, parentData)
+    
+    --[[
+        :SetAltArrowKeyMode()       alt_arrow_key_mode
+        :SetAutoFocus()             auto_focus
+        :SetBlinkSpeed()            blink_speed
+        :SetCursorPosition()        cursor_position
+        :SetFocus()                 focus
+        :SetHistoryLines()          history_lines
+        :SetIndentedWordWrap()      indented_word_wrap
+        :SetMaxBytes()              max_bytes
+        :SetMaxLetters()            max_letters
+        :SetMultiLine()             multi_line
+        :SetNumber()                number
+        :SetNumeric()               numeric
+        :SetPassword()              password
+        :SetTextInsets()            text_insets
+    ]]
+
+    -- :SetAltArrowKeyMode() 
+    if(data.alt_arrow_key_mode) then
+        frame:SetAltArrowKeyMode(data.alt_arrow_key_mode)
+    end
+    -- :SetAutoFocus() 
+    if(not(data.auto_focus))then
+        frame:SetAutoFocus(false) -- default to false so we can press escape with script to remove focus properly.
+    else
+        frame:SetAutoFocus(data.auto_focus)
+    end
+    -- :SetBlinkSpeed()
+    if(data.blink_speed)then
+        frame:SetBlinkSpeed(data.blink_speed)
+    end
+    -- :SetCursorPosition
+    if(data.cursor_position)then
+        frame:SetCursorPosition(data.cursor_position)
+    end
+    -- :SetFocus()
+    if(data.focus)then
+        frame:SetFocus(data.focus)
+    end
+    -- :SetHistoryLines()
+    if(data.history_lines)then
+        frame:SetHistoryLines(data.history_lines)
+    end
+    -- :SetIndentedWordWrap()
+    if(data.indented_word_wrap)then
+        frame:SetIndentedWordWrap(data.indented_word_wrap)
+    end
+    -- :SetMaxBytes()
+    if(data.max_bytes)then
+        frame:SetMaxBytes(data.max_bytes)
+    end
+    -- :SetMaxLetters()
+    if(data.max_letters)then
+        frame:SetMaxLetters(data.max_letters)
+    end
+    -- :SetMultiLine()
+    if(data.multi_line)then
+        frame:SetMultiLine(data.multi_line)
+    end
+    -- :SetNumber()
+    if(data.number)then
+        frame:SetNumber(data.number)
+    end
+    -- :SetNumeric()
+    if(data.numeric)then
+        frame:SetNumeric(data.numeric)
+    end
+    -- :SetPassword()
+    if(data.password)then
+        frame:SetPassword(data.password)
+    end
+    -- :SetTextInsets()
+    if(data.text_insets)then
+        frame:SetTextInsets(
+            (data.text_insets['left']   or data.text_insets[1] or 0),
+            (data.text_insets['right']  or data.text_insets[2] or 0),
+            (data.text_insets['top']    or data.text_insets[3] or 0),
+            (data.text_insets['bottom'] or data.text_insets[4] or 0)
+        )
+    end
+    -- Set black BG if no backdrop was set
+    if(data.backdrop == nil and parentData == nil)then
+        frame:SetBackdrop({
+            bgFile = "Interface/CHARACTERFRAME/UI-Party-Background"
+        })
+    end
+
+    -- Set size if none were set
+    if(data.size == nil) then
+        if(parentData ~= nil and parentData.size ~= nil) then
+            frame:SetSize(
+                (parentData.size.x or parentData.size[1]),
+                (parentData.size.y or parentData.size[2])
+            )
+            data.size={
+                x = parentData.size.x,
+                y = parentData.size.y
+            }
+        else
+            frame:SetSize(
+                (100),
+                (30)
+            )
+            data.size={
+                x = 100,
+                y = 30
+            }
+        end
+    end
+
+end
+
+function resourcery.ConstructCheckButton(frame, data)
+    
+    --[[
+        :SetChecked()                   checked
+        :SetCheckedTexture()            checked_texture
+        :SetDisabledCheckedTexture()    disabled_checked_texture
+    ]]
+    -- :SetChecked()
+    if(data.checked)then
+        frame:SetChecked(data.checked)
+    end
+    -- :SetCheckedTexture()
+    if(data.checked_texture)then
+        frame:SetCheckTexture(
+            (_G[data.checked_texture['texture']] or data.checked_texture['texture'] or data.checked_texture[1] or ""),
+            (data.checked_texture['filename'] or data.checked_texture[2] or "")
+        )
+    end
+    -- :SetDisabledCheckedTexture()
+    if(data.disabled_checked_texture)then
+        frame:SetDisabledCheckedTexture(
+            (_G[data.disabled_checked_texture['texture']] or data.disabled_checked_texture['texture'] or data.disabled_checked_texture[1] or ""),
+            (data.disabled_checked_texture['filename'] or data.disabled_checked_texture[2] or "")
+        )
+    end
+
+end
+
+function resourcery.ConstructTypeModel(frame, data)
+
+    --[[
+        :ClearFog()                 clear_fog
+        :ReplaceIconTexture()       replace_icon_texture
+        :SetCamera()                camera
+        :SetFacing()                facing
+        :SetFogColor()              fog_color
+        :SetFogFar()                fog_far
+        :SetFogNear()               fog_near
+        :SetGlow()                  glow
+        :SetLight()                 light
+        :SetModel()                 model
+        :SetModelScale()            model_scale
+        :SetPosition()              position
+        :SetSequence()              sequence
+        :SetSequenceTime()          sequence_time
+    ]]
+
+    -- :ClearFog()  
+    if(data.clear_fog)then
+        frame:ClearFog()
+    end
+    -- :ReplaceIconTexture()
+    if(data.replace_icon_texture)then
+        frame:ReplaceIconTexture(data.replace_icon_texture)
+    end
+    -- :SetCamera()
+    if(data.camera)then
+        frame:SetCamera(data.camera)
+    end
+    -- :SetFacing()
+    if(data.facing)then
+        frame:SetFacing(data.facing)
+    end
+    -- :SetFogColor()
+    if(data.fog_color)then
+        frame:SetFogColor(
+            (data.fog_color['red']   or data.fog_color[1] or 0),
+            (data.fog_color['green'] or data.fog_color[2] or 0),
+            (data.fog_color['blue']  or data.fog_color[3] or 0)
+        )
+    end
+    -- :SetFogFar()
+    if(data.fog_far)then
+        frame:SetFogFar(data.fog_far)
+    end
+    -- :SetFogNear()
+    if(data.fog_near)then
+        frame:SetFogFar(data.fog_near)
+    end
+    -- :SetGlow()
+    if(data.glow)then
+        frame:SetGlow(data.glow)
+    end
+    -- :SetLight()
+    if(data.light)then
+        frame:SetLight(
+            (data.light['enabled']       or data.light[1]  or 1),
+            (data.light['omni']          or data.light[2]  or 1),
+            (data.light['x']             or data.light[3]  or 0),
+            (data.light['y']             or data.light[4]  or 0),
+            (data.light['z']             or data.light[5]  or 0),
+            (data.light['amb_intensity'] or data.light[6]  or 0),
+            (data.light['amb_r']         or data.light[7]  or 0),
+            (data.light['amb_g']         or data.light[8]  or 0),
+            (data.light['amb_b']         or data.light[9]  or 0),
+            (data.light['dir_intensity'] or data.light[10] or 0),
+            (data.light['dir_r']         or data.light[11] or 0),
+            (data.light['dir_g']         or data.light[12] or 0),
+            (data.light['dir_b']         or data.light[13] or 0)
+        ) 
+    end
+    -- :SetModel()
+    if(data.model)then
+        frame:SetModel(data.model)
+    end
+    -- :SetModelScale()
+    if(data.model_scale)then
+        frame:SetModelScale(data.model_scale)
+    end
+    -- :SetPosition
+    if(data.position)then
+        frame:SetPosition(
+            (data.position['x'] or data.position[1] or 0),
+            (data.position['y'] or data.position[2] or 0),
+            (data.position['z'] or data.position[3] or 0)
+        )
+    end
+    -- :SetSequence()
+    if(data.sequence)then
+        frame:SetSequence(data.sequence)
+    end
+    -- :SetSequenceTime()
+    if(data.sequence_time)then
+        frame:SetSequenceTime(
+            (data.sequence_time['sequence'] or data.sequence_time[1] or 0),
+            (data.sequence_time['time']     or data.sequence_time[2] or 0)
+        )
+    end
+
+
+end
+
+function resourcery.ConstructTypePlayerModel(frame, data)
+    --[[
+        :SetCreature()      creature
+        :SetRotation()      rotation
+        :SetUnit()          unit
+    ]]
+
+    -- :SetCreature()
+    if(data.creature)then
+        frame:SetCreature(data.creature)
+    end
+    -- :SetRotation()
+    if(data.rotation)then
+        frame:SetRotation(data.rotation)
+    end
+    -- :SetUnit
+    if(data.unit)then
+        frame:SetUnit(data.unit)
+    end
+end
+
+-- Page 1206
+function resourcery.ConstructTypeScrollFrame(frame, data)
+
+    --[[
+        :SetHorizontalScroll()      horizontal_scroll
+        :SetVerticalScroll()        vertical_scroll
+        :SetScrollChild()           scroll_child
+    ]]
+
+    -- :SetHorizontalScroll()
+    if(data.horizontal_scroll)then
+        frame:SetHorizontalScroll(data.horizontal_scroll)
+    end
+    -- :SetVerticalScroll()
+    if(data.vertical_scroll)then
+        frame:SetVerticalScroll(data.vertical_scroll)
+    end
+    -- :SetScrollChild()
+    if(data.scroll_child)then
+        frame:SetScrollChild(data.scroll_child)
+    end
+end
+
+function resourcery.ConstructTypeSlider(frame, data)
+
+    --[[
+        :Disable()              disable
+        :Enable()               enable
+        :SetMinMaxValues()      min_max_values
+        :SetOrientation()       orientation
+        :SetThumbTexture()      thumb_texture
+        :SetValue()             value
+        :SetValueStep()         value_step
+    ]]
+
+    -- :Disable()
+    if(data.disable)then
+        frame:Disable(data.disable)
+    end
+    -- :Enable() 
+    if(data.enable)then
+        frame:Enable(data.enable)
+    end
+    -- :SetMinMaxValues()
+    if(data.min_max_values)then
+        --[[
+        frame:SetMinMaxValues(
+            (data.min_max_values['min_value'] or data.min_max_values[1]),
+            (data.min_max_values['max_value'] or data.min_max_values[2])
+        )
+        ]]
+        frame:SetMinMaxValues(
+            unpack(resourcery.ParseSizes(
+                (data.size['min_value'] or data.size[1]),
+                (data.size['max_value'] or data.size[2]),
+                frame
+            )))
+    end
+    -- :SetOrientation()
+    if(data.orientation)then
+        frame:SetOrientation(data.orientation)
+    end
+    -- :SetThumbTexture()
+    if(data.thumb_texture)then
+        frame:SetThumbTexture(data.thumb_texture)
+    end
+    -- :SetValue()
+    if(data.value)then
+        frame:SetValue(data.value)
+    end
+    -- :SetValueStep()
+    if(data.value)then
+        frame:SetValueStep(data.value_step)
+    end
 end
 
 function resourcery.ConjureFrame(data, parentData)
@@ -655,6 +1075,8 @@ function resourcery.ConjureFrame(data, parentData)
             (data.inherits or nil)
         )
     end
+    print("name",frame:GetName() or "no parent")
+    print(frame:GetName() or "",":parent name 1:",frame:GetParent():GetName() or "no parent")
 
     -- Add variables to the frame object
     if(data.vars and next(data.vars))then
@@ -663,26 +1085,29 @@ function resourcery.ConjureFrame(data, parentData)
             frame.vars[k] = v
         end
     end
+    print(frame:GetName() or "",":parent name 2:",frame:GetParent():GetName() or "no parent")
 
-    -- Base main frame
     resourcery.ConstructBase(frame, data, parentData)
-    resourcery.ConstructTypeFrame(frame, data)
+    resourcery.ConstructTypeFrame(frame, data, parentData)
     if(data.type == "Button") then
         resourcery.ConstructTypeButton(frame, data)
+    elseif(data.type == "EditBox") then
+        resourcery.ConstructEditBox(frame, data, parentData)
+        resourcery.ConstructTypeString(frame, data, parentData, false)
+    elseif(data.type == "CheckButton")then
+        resourcery.ConstructTypeButton(frame, data)
+        resourcery.ConstructCheckButton(frame, data)
+    elseif(data.type == "Model")then
+        resourcery.ConstructTypeModel(frame, data)
+    elseif(data.type == "PlayerModel")then
+        resourcery.ConstructTypeModel(frame, data)
+        resourcery.ConstructTypePlayerModel(frame, data)
+    elseif(data.type == "ScrollFrame")then
+        resourcery.ConstructTypeScrollFrame(frame, data)
+    elseif(data.type == "Slider")then
+        resourcery.ConstructTypeSlider(frame, data)
     end
-
-    -- Scripts
-    if(data.scripts and next(data.scripts))then
-        for k,v in pairs(data.scripts) do
-            if(k == "events")then
-                for kk,vv in pairs(v) do
-                    frame:RegisterEvent(vv)
-                end
-            else
-                frame:SetScript(k, v)
-            end
-        end
-    end
+    print(frame:GetName() or "",":parent name 3:",frame:GetParent():GetName() or "no parent")
 
     -- Textures
     if( data.textures and next(data.textures) )then
@@ -703,6 +1128,7 @@ function resourcery.ConjureFrame(data, parentData)
 
         end
     end
+    print(frame:GetName() or "",":parent name 4:",frame:GetParent():GetName() or "no parent")
 
     -- Strings
     if(data.strings and next(data.strings))then
@@ -718,11 +1144,13 @@ function resourcery.ConjureFrame(data, parentData)
             local string = frame.strings[k] 
             
             resourcery.ConstructBase(string, strData)
-            resourcery.ConstructTypeString(string, strData)
+            resourcery.ConstructTypeString(string, strData, data, true)
         end
 
     end
+    print(frame:GetName() or "",":parent name 5:",frame:GetParent():GetName() or "no parent")
 
+    -- Frames
     if( data.frames and next(data.frames) )then
 
         if(not(frame.frames))then
@@ -732,6 +1160,27 @@ function resourcery.ConjureFrame(data, parentData)
             frame.frames[k] = resourcery.ConjureFrame(v, data)
         end
     end
+    print(frame:GetName() or "",":parent name 6:",frame:GetParent():GetName() or "no parent")
+
+    -- Scripts
+    if(data.scripts and next(data.scripts))then
+        for k,v in pairs(data.scripts) do
+            if(k == "events")then
+                for kk,vv in pairs(v) do
+                    frame:RegisterEvent(vv)
+                end
+            else
+                -- Run function once tied to OnConjure after the frame is created.
+                if(k == "OnConjure")then
+                    v(frame)
+                else
+                    frame:SetScript(k, v)
+                end
+            end
+        end
+    end
+    print(frame:GetName() or "",":parent name 7:",frame:GetParent():GetName() or "no parent")
+    print("---")
 
     return frame
 end
@@ -751,9 +1200,12 @@ function resourcery.PrepareFrame(newData, frameData)
 
     -- Loop through all templates and apply template settings.
     if(newData.templates and next(newData.templates))then
+        local currentTemplate, templateNr
         for i = 1, #newData.templates do
-            if(type(newData.templates[i]) == "string") then
-                newData = resourcery.ApplyTemplateSettings(newData, newData, i)
+            templateNr = (#newData.templates - (i-1))
+            currentTemplate = newData.templates[templateNr]
+            if(type(currentTemplate) == "string") then
+                newData = resourcery.ApplyTemplateSettings(newData, newData, templateNr)
             end
         end
     end
@@ -768,7 +1220,6 @@ function resourcery.PrepareFrame(newData, frameData)
     if(newData.textures and next(newData.textures)) then
         for k, textureData in pairs(newData.textures)do
             if(textureData.disabled) then
-                print("In Frame: "..(newData.name or "Unknown").." - Texture disabled: "..(k or "Unknown"))
                 newData.textures[k]={}
             elseif(textureData.duplicate) then
                 resourcery.ApplyDuplicateSettings(textureData, newData.textures)
@@ -776,7 +1227,6 @@ function resourcery.PrepareFrame(newData, frameData)
         end
     end
 
-    -- Apply duplicate string settings 
     if(newData.strings and next(newData.strings)) then
         for k, stringData in pairs(newData.strings) do
             if(stringData.duplicate) then
@@ -785,7 +1235,7 @@ function resourcery.PrepareFrame(newData, frameData)
         end
     end
  
-    -- Loop through all child frames of current frame and apply template and duplicate settings.
+    -- Loop through all child frames of current frame and apply template settings.
     if(newData.frames and next(newData.frames)) then
         for k, sub_newData in pairs(newData.frames) do
             newData.frames[k] = resourcery.PrepareFrame(sub_newData, newData.frames[k])
@@ -811,7 +1261,21 @@ function resourcery.StartConjuring(frameData, overwriteData)
             newData = resourcery.ApplyTableData(overwriteData, newData)
         end
         frame = resourcery.ConjureFrame(newData)
+        print("END")
+        for k,v in pairs(newData.frames)do
+            print(k,v.name)
+            local parent = _G[v.name]:GetParent()
+            print(parent and parent:GetName() or "cant find parent name")
+        end
     end
 
     return frame
 end
+
+-- TODO: Add OnConjure explanation on github etc
+-- TODO: Add template true explanation to github
+-- TODO: Add newly supported frame objects to github
+-- TODO: Add frame culler feature text, mouse drag, scroll zoom, scroll move
+
+-- TODO: SetAllPoints, add string _G thingy and test it
+-- TODO: child_to before SetPoint so we can set its point, also do a clear all points beforehand?
