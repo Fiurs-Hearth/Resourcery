@@ -42,12 +42,12 @@ function resourcery.ParseSizes(x, y, frame)
     local coords = {[1]=x, [2]=y}
 
     for i, coord in pairs(coords)do
-
         if(type(coord) == "string")then
 
             if(coord.find(coord, "$"))then
                 -- Select words starting with $
                 for match in coord:gmatch("(%$[^%s]+)") do -- (%$%a+)
+                    --print("|c00ff0000",match)
                     -- replace $match with its size(width or height) depending if you want parent's size or another frame's size
                     coord = coord:gsub( 
                         match, 
@@ -58,9 +58,7 @@ function resourcery.ParseSizes(x, y, frame)
             -- Calculate it
             calcFunc = loadstring("return "..coord)
             coords[i] = calcFunc()
-
         end
-
     end
 
     return coords
@@ -115,6 +113,22 @@ function resourcery.ApplyTemplateSettings(newData, frameData, index)
     return newData
 end
 
+-- Attempt to fix problem caused by what I assume is Blizzard's garbage collecter.
+function resourcery.ReApplyParents(frame, data)
+    local parentFrame = frame
+    local subFrame
+
+    for k,d in pairs(data.frames)do
+        subFrame = _G[d.name or k]
+        subFrame:SetParent(    
+            (_G[d.parent] or parentFrame or UIParent)       
+        )
+        if(d.frames)then
+            resourcery.ReApplyParents(subFrame, d)
+        end
+    end
+end
+
 -- Apply settings that are in common with most(all?) Frame types
 function resourcery.ConstructBase(frame, data, parentData)
 
@@ -137,7 +151,7 @@ function resourcery.ConstructBase(frame, data, parentData)
         end
     else
         if(data.parent == "$parent" and parentData.name)then
-            data.parent = _G[parentData.name]
+            data.parent = parentData.name
         end
     end
     -- :SetAlpha()
@@ -365,7 +379,6 @@ function resourcery.ConstructTypeFrame(frame, data, parentData)
                 framePoint[4],
                 framePoint[5]
             )
-            print(frame:GetName(), ":", frame:GetParent():GetName())
         end
     end
 
@@ -1027,8 +1040,8 @@ function resourcery.ConstructTypeSlider(frame, data)
         ]]
         frame:SetMinMaxValues(
             unpack(resourcery.ParseSizes(
-                (data.size['min_value'] or data.size[1]),
-                (data.size['max_value'] or data.size[2]),
+                (data.min_max_values['min_value'] or data.min_max_values[1]),
+                (data.min_max_values['max_value'] or data.min_max_values[2]),
                 frame
             )))
     end
@@ -1042,10 +1055,20 @@ function resourcery.ConstructTypeSlider(frame, data)
     end
     -- :SetValue()
     if(data.value)then
+        local tempPoint = {frame:GetPoint()} -- Store points since SetValue sets points to topleft
         frame:SetValue(data.value)
+        -- Set point to original position by clearing all points first. (Part of an ugly fix)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            tempPoint[1],
+            tempPoint[2],
+            tempPoint[3],
+            tempPoint[4],
+            tempPoint[5]
+        )
     end
     -- :SetValueStep()
-    if(data.value)then
+    if(data.value_step)then
         frame:SetValueStep(data.value_step)
     end
 end
@@ -1075,9 +1098,6 @@ function resourcery.ConjureFrame(data, parentData)
             (data.inherits or nil)
         )
     end
-    print("name",frame:GetName() or "no parent")
-    print(frame:GetName() or "",":parent name 1:",frame:GetParent():GetName() or "no parent")
-
     -- Add variables to the frame object
     if(data.vars and next(data.vars))then
         frame.vars = {}
@@ -1085,7 +1105,6 @@ function resourcery.ConjureFrame(data, parentData)
             frame.vars[k] = v
         end
     end
-    print(frame:GetName() or "",":parent name 2:",frame:GetParent():GetName() or "no parent")
 
     resourcery.ConstructBase(frame, data, parentData)
     resourcery.ConstructTypeFrame(frame, data, parentData)
@@ -1107,7 +1126,6 @@ function resourcery.ConjureFrame(data, parentData)
     elseif(data.type == "Slider")then
         resourcery.ConstructTypeSlider(frame, data)
     end
-    print(frame:GetName() or "",":parent name 3:",frame:GetParent():GetName() or "no parent")
 
     -- Textures
     if( data.textures and next(data.textures) )then
@@ -1128,8 +1146,6 @@ function resourcery.ConjureFrame(data, parentData)
 
         end
     end
-    print(frame:GetName() or "",":parent name 4:",frame:GetParent():GetName() or "no parent")
-
     -- Strings
     if(data.strings and next(data.strings))then
 
@@ -1148,11 +1164,8 @@ function resourcery.ConjureFrame(data, parentData)
         end
 
     end
-    print(frame:GetName() or "",":parent name 5:",frame:GetParent():GetName() or "no parent")
-
     -- Frames
     if( data.frames and next(data.frames) )then
-
         if(not(frame.frames))then
             frame.frames = {}
         end
@@ -1160,8 +1173,6 @@ function resourcery.ConjureFrame(data, parentData)
             frame.frames[k] = resourcery.ConjureFrame(v, data)
         end
     end
-    print(frame:GetName() or "",":parent name 6:",frame:GetParent():GetName() or "no parent")
-
     -- Scripts
     if(data.scripts and next(data.scripts))then
         for k,v in pairs(data.scripts) do
@@ -1179,8 +1190,6 @@ function resourcery.ConjureFrame(data, parentData)
             end
         end
     end
-    print(frame:GetName() or "",":parent name 7:",frame:GetParent():GetName() or "no parent")
-    print("---")
 
     return frame
 end
@@ -1246,7 +1255,6 @@ function resourcery.PrepareFrame(newData, frameData)
     end
 
     return newData
-
 end
 
 function resourcery.StartConjuring(frameData, overwriteData)
@@ -1261,12 +1269,11 @@ function resourcery.StartConjuring(frameData, overwriteData)
             newData = resourcery.ApplyTableData(overwriteData, newData)
         end
         frame = resourcery.ConjureFrame(newData)
-        print("END")
-        for k,v in pairs(newData.frames)do
-            print(k,v.name)
-            local parent = _G[v.name]:GetParent()
-            print(parent and parent:GetName() or "cant find parent name")
-        end
+        -- Attempt to fix problem caused by what I assume is Blizzard's garbage collecter.
+        resourcery.ReApplyParents(frame, newData)
+        
+        --print(WIP_slider:GetParent():GetName())
+        --print(WIP_container_slider:GetParent():GetName())
     end
 
     return frame
@@ -1279,3 +1286,6 @@ end
 
 -- TODO: SetAllPoints, add string _G thingy and test it
 -- TODO: child_to before SetPoint so we can set its point, also do a clear all points beforehand?
+
+-- TODO: Why isnt SetMinMaxValues returning correct values?
+    -- Check if : is after $parent?

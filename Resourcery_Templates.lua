@@ -774,22 +774,25 @@ resourcery.templates = {
 
         frames={
             slider={
-                templates={"backdrop_1"},
+                --templates={"backdrop_1"},
                 name="$parent_slider",
                 type="Slider",
                 inherits="UIPanelScrollBarTemplate",
-                size={30, "$parent + 10"},
-                point={"LEFT", "WIP", "RIGHT", -30, 0},
+                size={30, "$parent - 32"},
+                point={"LEFT", "$parent", "RIGHT", -6, 0},
                 
                 --orientation="VERTICAL",
-                --min_max_values={0, "$parent + 100"}
+                --value = 0,
+                --value_step = 5,
+                --min_max_values={0, "$parent"}
+                --min_max_values={0, "$parent_container"}
+                --min_max_values={0, "$parent:GetHeight() - (1/$parent_slider:GetScale()*$parent:GetHeight())"}
             }
         },
 
-
+        --WIP_slider:SetMinMaxValues(0, WIP_container:GetHeight() - ( 1/WIP_container:GetScale()*WIP:GetHeight() ))
+        
         --SetMinMaxValues (WIP_container:GetHeight() - ( 1/WIP_container:GetScale()*WIP:GetHeight() ))
     },
 
 }
-
---print(WIP_slider:GetParent())
