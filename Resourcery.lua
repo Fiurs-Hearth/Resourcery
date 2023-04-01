@@ -44,17 +44,17 @@ function resourcery.ParseSizes(x, y, frame)
     for i, coord in pairs(coords)do
         if(type(coord) == "string")then
 
-            if(coord.find(coord, "$"))then
-                -- Select words starting with $
-                for match in coord:gmatch("(%$[^%s]+)") do -- (%$%a+)
-                    --print("|c00ff0000",match)
-                    -- replace $match with its size(width or height) depending if you want parent's size or another frame's size
-                    coord = coord:gsub( 
-                        match, 
-                        select( i, ((match == "$parent") and frame:GetParent() or _G[match:gsub("%$", "")]):GetSize() )
-                    )
-                end
+            local parentFrame = frame:GetParent()
+            if(not(parentFrame))then
+                print("|c00ff0000NO PARENT FRAME SET FOR FRAME:", frame:GetName())
             end
+            -- Replace "$parent " (with a space) with "REPLACEMENT_WITH_SPACE"
+            coord = string.gsub(coord, "%$parent%s", select(i, parentFrame:GetSize()) )
+            -- Replace "$parent" at the end of string with "REPLACEMENT"
+            coord = string.gsub(coord, "%$parent$", select(i, parentFrame:GetSize()))
+            -- Replace "$parent" with "REPLACEMENT"
+            coord = string.gsub(coord, "%$parent", parentFrame:GetName())
+           
             -- Calculate it
             calcFunc = loadstring("return "..coord)
             coords[i] = calcFunc()
@@ -62,7 +62,6 @@ function resourcery.ParseSizes(x, y, frame)
     end
 
     return coords
-
 end
 
 function resourcery.ApplyTableData(newData, frameData)
@@ -120,11 +119,13 @@ function resourcery.ReApplyParents(frame, data)
 
     for k,d in pairs(data.frames)do
         subFrame = _G[d.name or k]
-        subFrame:SetParent(    
-            (_G[d.parent] or parentFrame or UIParent)       
-        )
-        if(d.frames)then
-            resourcery.ReApplyParents(subFrame, d)
+        if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
+            subFrame:SetParent(
+                (_G[d.parent] or parentFrame or UIParent)       
+            )
+            if(d.frames)then
+                resourcery.ReApplyParents(subFrame, d)
+            end
         end
     end
 end
@@ -153,6 +154,7 @@ function resourcery.ConstructBase(frame, data, parentData)
         if(data.parent == "$parent" and parentData.name)then
             data.parent = parentData.name
         end
+        frame:SetParent(_G[data.parent] or _G[(parentData and parentData.name)] or UIParent)
     end
     -- :SetAlpha()
     if(data.alpha) then
@@ -1136,8 +1138,15 @@ function resourcery.ConjureFrame(data, parentData)
 
         for k, textureData in pairs(data.textures)do
 
-            if( not( _G[data.name.."_Textures_"..(textureData.name or k)] ) )then
-                frame.textures[k] = frame:CreateTexture(data.name.."_Textures_"..(textureData.name or k))
+            -- Find $parent and replace it with this frame's name since this textures are connected to this frame.
+            if(textureData.name and string.find(textureData.name, "$parent") and data.name)then
+                textureData.name = textureData.name.gsub(textureData.name, "$parent", data.name)
+            end
+            
+            if(textureData.name and not(_G[textureData.name]))then
+                frame.textures[k] = frame:CreateTexture(textureData.name) -- I think this causes it
+            elseif( not( _G[data.name.."_Textures_"..k]) and not(_G[textureData.name]) )then
+                frame.textures[k] = frame:CreateTexture(data.name.."_Textures_"..k)
             end
             local tex = frame.textures[k] 
             
@@ -1247,10 +1256,11 @@ function resourcery.PrepareFrame(newData, frameData)
     -- Loop through all child frames of current frame and apply template settings.
     if(newData.frames and next(newData.frames)) then
         for k, sub_newData in pairs(newData.frames) do
-            newData.frames[k] = resourcery.PrepareFrame(sub_newData, newData.frames[k])
+            -- I move the ApplyDuplicate to before PrepareFrame to solve the issue with duplicate not working properly for frames (hopefully it fixes it).
             if(sub_newData.duplicate) then
                 resourcery.ApplyDuplicateSettings(sub_newData, newData.frames)
             end
+            newData.frames[k] = resourcery.PrepareFrame(sub_newData, newData.frames[k])
         end
     end
 
@@ -1271,9 +1281,6 @@ function resourcery.StartConjuring(frameData, overwriteData)
         frame = resourcery.ConjureFrame(newData)
         -- Attempt to fix problem caused by what I assume is Blizzard's garbage collecter.
         resourcery.ReApplyParents(frame, newData)
-        
-        --print(WIP_slider:GetParent():GetName())
-        --print(WIP_container_slider:GetParent():GetName())
     end
 
     return frame
@@ -1287,5 +1294,5 @@ end
 -- TODO: SetAllPoints, add string _G thingy and test it
 -- TODO: child_to before SetPoint so we can set its point, also do a clear all points beforehand?
 
--- TODO: Why isnt SetMinMaxValues returning correct values?
+-- TODO: Check GetEffectiveScale out of bounds for container frame etc
     -- Check if : is after $parent?

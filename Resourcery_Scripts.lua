@@ -104,6 +104,9 @@ resourcery.scripts = {
             f.vars.children = {f:GetChildren()}
         end
         local parentFrame = f:GetParent()
+        if(not(parentFrame)) then
+            parentFrame = _G[string.gsub(f:GetName(), "_container", "")]
+        end
         local parentFrameRect={
             [1]=parentFrame:GetLeft(),
             [2]=parentFrame:GetRight(),
@@ -139,7 +142,6 @@ resourcery.scripts = {
     TransformToParentFrame=function(f, align)
 
         if(type(align) ~= "string")then
-            print("not")
             return
         end
 
@@ -211,5 +213,192 @@ resourcery.scripts = {
             )
         end
 
-    end
+    end,
+    -- Sets the position for the thumb of a slider based on value (0 - 1), also moves the scrollframe container
+    SetScrollValue=function(f, value, updateSliderOnly)
+
+        local sName = f:GetName()
+        local thumb = _G[sName.."_thumb"]
+        thumb.center_offset = thumb:GetHeight()/2
+
+        local maxTop = (_G[sName.."_up"]:GetBottom() - thumb.center_offset)
+        local maxBottom = (_G[sName.."_down"]:GetTop() + thumb.center_offset)
+        f.scrollRange = (maxTop - maxBottom) * (f:GetScale())
+
+        if(value > 1)then
+            value = 1
+        elseif(value < 0)then
+            value = 0
+        end
+        value = tonumber(tostring(value)) -- Fixes floating-point rounding precision error
+
+        thumb.point = {thumb:GetPoint()}
+        thumb:SetPoint(
+            thumb.point[1],
+            thumb.point[2],
+            thumb.point[3],
+            thumb.point[4],
+            -(f:GetTop() - _G[sName.."_up"]:GetBottom()) - f.scrollRange*value
+        )
+
+        local parentFrame = f:GetParent()
+        
+        -- We have to do an OnUpdate and check if the container frame has been created yet.
+        if( not(_G[parentFrame:GetName().."_container"]) )then
+            f.time = 0
+            f:SetScript("OnUpdate", function(s, e)
+                s.time = s.time + e
+
+                local containerFrame = _G[parentFrame:GetName().."_container"]
+               
+                if(s.time > 2 or containerFrame)then
+                    s:SetScript("OnUpdate", nil)
+                    if(containerFrame)then
+                        resourcery.scripts.SetScrollValue(f, value)
+                    end
+                end
+            end)
+        else
+            local containerFrame = _G[parentFrame:GetName().."_container"]
+            if(containerFrame and (updateSliderOnly == false or not(updateSliderOnly)) )then
+                local conPos = {containerFrame:GetPoint()}
+                local fromTop = parentFrame:GetTop()*(1/containerFrame:GetScale()) - (containerFrame:GetTop())
+                local scrollRangeCon = (parentFrame:GetHeight()*(1/containerFrame:GetScale()) - (containerFrame:GetHeight()))
+
+                containerFrame:SetPoint(
+                    conPos[1],
+                    conPos[2],
+                    conPos[3],
+                    conPos[4],
+                    conPos[5] + fromTop - (scrollRangeCon * value)
+                )
+            end
+
+            resourcery.scripts.FrameCuller(containerFrame)
+        end
+        
+        f.vars.value = value
+
+        resourcery.scripts.CheckArrowStatus(f)
+    end,
+    -- Get the scroll value of the slider, tries to find slider if frame passed was not slider.
+    GetScrollValue=function(f)
+
+        if( not(string.sub(f:GetName(), -7) == "_slider") )then
+            f = resourcery.scripts.FindSliderFrame(f)
+        end
+
+        return (f.vars and f.vars.value) or 0
+    end,
+    -- Try and find slider frame related to current frame. (WIP)
+    FindSliderFrame=function(f)
+        -- if we are not trying to get the scroll value on the slider then we try to find the slider
+        local parent = f:GetParent()
+        -- Check if parent is slider
+        if(string.sub(parent:GetName(), -7) == "_slider")then
+            f = parent
+        else
+        -- Check if the slider is a child of the parent
+            local parentChildren = {parent:GetChildren()}
+            -- If it has no children, check the this parent's parent for slider
+            if(parentChildren)then
+                for k,frame in pairs(parentChildren)do
+                    if(type(frame) == "table" and string.find(frame:GetName(), "_slider"))then
+                        f = frame
+                    end
+                end
+            else
+                parent = parent:GetParent()
+                parentChildren = {parent:GetChildren()}
+                if(parentChildren)then
+                    for k,frame in pairs(parentChildren)do
+                        if(type(frame) == "table" and string.find(frame:GetName(), "_slider"))then
+                            f = frame
+                        end
+                    end
+                end
+            end
+        end
+
+        return f
+    end,
+    -- Get the percentage position for the mouse click for the slider.
+    GetScrollClickValue=function(f)
+
+        local __, mousePosY = GetCursorPosition()
+        mousePosY = (mousePosY / f:GetEffectiveScale())
+
+        if(mousePosY > f.maxTop)then
+            mousePosY = f.maxTop
+        elseif(mousePosY < f.maxBottom)then
+            mousePosY = f.maxBottom
+        end
+
+        local y = (f.maxTop - mousePosY)
+        local currentValue = (y)/f.scrollRange
+
+        return currentValue
+    end,
+    -- Gets the frame's percentage position from top to bottom (0 - 1).
+    GetFrameToSliderValue=function(f)
+        if(not(f.scrollRange))then
+            local slider = resourcery.scripts.FindSliderFrame(f)
+            local sName = slider:GetName()
+            local thumb = _G[sName.."_thumb"]
+            thumb.center_offset = thumb:GetHeight()/2
+    
+            local maxTop = (_G[sName.."_up"]:GetBottom() - thumb.center_offset)
+            local maxBottom = (_G[sName.."_down"]:GetTop() + thumb.center_offset)
+            f.scrollRange = (maxTop - maxBottom) * (f:GetScale())
+        end
+
+        local value = (f:GetTop()*f:GetScale() - f:GetParent():GetTop()) / (f:GetHeight()*f:GetScale() - f:GetParent():GetHeight()) 
+        f.containerScrollRange = value
+        return value
+    end,
+    -- Used from the scrollframe container frame.
+    -- Returns the percentage scroll from top of its parent (scrollframe).
+    SetSliderThumbRelatedToContainer=function(f)
+        -- TODO: Do we need to get name here???
+        local parentFrameName = f:GetParent():GetName()
+        if(_G[parentFrameName.."_slider"])then
+            local slider = _G[parentFrameName.."_slider"]
+            local containerValue = resourcery.scripts.GetFrameToSliderValue(f)
+            resourcery.scripts.SetScrollValue(slider, containerValue, true)
+        end
+    end,
+    CheckArrowStatus=function(f)
+
+        local upArrow =  _G[f:GetName().."_up"]
+        local downArrow =  _G[f:GetName().."_down"]
+
+        local container = _G[f:GetParent():GetName().."_container"]
+
+        if(container and container:GetParent())then -- We check for parentframe incase we are running conjure again after already being conjured to fix an issue with the parent having being changed because of how blizzard code works.
+
+            local containerTop = tonumber(string.format("%.2f", (container:GetTop()*container:GetScale())))
+            local scrollFrameTop = tonumber(string.format("%.2f", (container:GetParent():GetTop())))
+
+            local containerBottom = tonumber(string.format("%.2f", (container:GetBottom()*container:GetScale())))
+            local scrollFrameBottom = tonumber(string.format("%.2f", (container:GetParent():GetBottom())))
+
+            if( containerTop == scrollFrameTop and containerBottom == scrollFrameBottom )then
+                downArrow:Disable()
+                upArrow:Disable()
+                return
+            end
+        end
+
+        if(upArrow and f.vars.value <= 0)then
+            upArrow:Disable()
+        elseif(upArrow)then
+            upArrow:Enable()
+        end
+
+        if(downArrow and f.vars.value >= 1)then
+            downArrow:Disable()
+        elseif(downArrow)then
+            downArrow:Enable()
+        end
+    end,
 }

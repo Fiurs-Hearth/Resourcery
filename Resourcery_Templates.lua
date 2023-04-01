@@ -60,10 +60,6 @@ resourcery.templates = {
          }
     },
 
-    test={
-        size={x=1000,y=500}
-    },
-
     overlay={
         name="overlay",
         type="Frame",
@@ -489,6 +485,12 @@ resourcery.templates = {
         }
     },
 
+    button_base = {
+        type="Button",
+        size={30, 30},
+        normal_texture="Interface/Icons/INV_Misc_QuestionMark.blp"
+    },
+
     blizz_button = {
         type = "Button",
         inherits = "UIPanelButtonTemplate",
@@ -630,6 +632,11 @@ resourcery.templates = {
                         cursor_direction[2] = cursorPos[2] -- reset it
 
                         resourcery.scripts.FrameCuller(s)
+                        if(_G[parentFrame:GetName().."_slider"])then
+                            local slider = _G[parentFrame:GetName().."_slider"]
+                            local containerValue = resourcery.scripts.GetFrameToSliderValue(s)
+                            resourcery.scripts.SetScrollValue(slider, containerValue, true)
+                        end
                     end)                  
                 end
             end,
@@ -660,7 +667,10 @@ resourcery.templates = {
                     direction = direction * -1
                 end
                 
-                if(s.vars.b_maxZoomed and direction > 0)then
+                if( s.vars.b_maxZoomed and direction > 0 or
+                    s.vars.maxZoom_in == currentScale and direction < 0 or
+                    s.vars.maxZoom_out == currentScale and direction > 0
+                )then
                     return
                 else
                     s.vars.b_maxZoomed = false
@@ -719,6 +729,8 @@ resourcery.templates = {
                 end
 
                 resourcery.scripts.FrameCuller(s)
+                resourcery.scripts.SetSliderThumbRelatedToContainer(s)
+
             end
         }
     },
@@ -770,29 +782,108 @@ resourcery.templates = {
             end,
          }
     },
-    sf_slider={
+    sf_faux_slider={
 
         frames={
             slider={
-                --templates={"backdrop_1"},
-                name="$parent_slider",
-                type="Slider",
-                inherits="UIPanelScrollBarTemplate",
-                size={30, "$parent - 32"},
-                point={"LEFT", "$parent", "RIGHT", -6, 0},
-                
-                --orientation="VERTICAL",
-                --value = 0,
-                --value_step = 5,
-                --min_max_values={0, "$parent"}
-                --min_max_values={0, "$parent_container"}
-                --min_max_values={0, "$parent:GetHeight() - (1/$parent_slider:GetScale()*$parent:GetHeight())"}
-            }
-        },
 
-        --WIP_slider:SetMinMaxValues(0, WIP_container:GetHeight() - ( 1/WIP_container:GetScale()*WIP:GetHeight() ))
-        
-        --SetMinMaxValues (WIP_container:GetHeight() - ( 1/WIP_container:GetScale()*WIP:GetHeight() ))
-    },
+                templates={"backdrop_3"},
+                name="$parent_slider",
+                type="Frame",
+                size={30, "$parent + 4"},
+                point={"LEFT", "$parent", "RIGHT", -1, 0},
+
+                enable_mouse=true,
+
+                frames={
+                    up={
+                        templates={"button_base"},
+                        name="$parent_up",
+                        point={"TOP", "$parent", "TOP", 0, 0},
+
+                        normal_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Up.blp",
+                        disabled_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Disabled.blp",
+
+                        scripts={
+                            OnMouseDown=function(s)
+                                local slider = s:GetParent()
+                                local scrollValue = resourcery.scripts.GetScrollValue(slider) - slider.vars.value_step
+                                resourcery.scripts.SetScrollValue(slider, (scrollValue))
+                                PlaySound("UChatScrollButton")
+                            end
+                        }
+                    },
+                    down={
+                        duplicate="up",
+                        name="$parent_down",
+                        point={"BOTTOM", "$parent", "BOTTOM"},
+
+                        normal_texture="Interface/BUTTONS/UI-ScrollBar-ScrollDOwnButton-Up.blp",
+                        disabled_texture="Interface/BUTTONS/UI-ScrollBar-ScrollDOwnButton-Disabled.blp",
+
+                        scripts={
+                            OnMouseDown=function(s)
+                                local slider = s:GetParent()
+                                local scrollValue = resourcery.scripts.GetScrollValue(slider) + slider.vars.value_step
+                                resourcery.scripts.SetScrollValue(slider, scrollValue)
+                                PlaySound("UChatScrollButton");
+                            end
+                        }
+                    },
+                    --[[
+                        left={
+                            name="$parent_left"
+
+                        },
+                        right={
+                            name="$parent_right"
+
+                        },
+                    ]]
+                },
+                textures={
+                    thumb={
+                        name="$parent_thumb",
+                        type="Texture",
+                        size={30, 30},
+                        --texture="Interface/BUTTONS/UI-ScrollBar-Knob.blp",
+                        texture="Interface/BUTTONS/UI-Quickslot-Depress.blp",
+                        point={"TOP", "$parent", "TOP", 0, 0}
+                    },
+                },
+
+                vars={
+                    value=0.3,
+                    value_step=0.2
+                },
+
+                scripts={
+                    -- Move thumb to below of the top button
+                    OnConjure=function(s)
+                        resourcery.scripts.SetScrollValue(s, (s.vars.value or 0))
+                    end,    
+                    OnMouseDown=function(s)
+                        local sName = s:GetName()
+
+                        local thumb = _G[sName.."_thumb"]
+                        thumb.center_offset = thumb:GetHeight()/2
+
+                        s.maxTop = (_G[sName.."_up"]:GetBottom() - thumb.center_offset)
+                        s.maxBottom = (_G[sName.."_down"]:GetTop() + thumb.center_offset)
+                        s.scrollRange = (s.maxTop - s.maxBottom)
+                        
+                        s:SetScript("OnUpdate", function()
+                            local currentValue = resourcery.scripts.GetScrollClickValue(s)
+                            resourcery.scripts.SetScrollValue(s, currentValue)
+                        end)
+                    end,
+                    OnMouseUp=function(s)
+                        s:SetScript("OnUpdate", nil)
+                    end
+                }
+            }
+
+        }
+    }
 
 }
