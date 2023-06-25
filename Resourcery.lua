@@ -39,29 +39,35 @@ end
 -- Check what kind of data size is and if we should get and return a frame's or several size(s)
 function resourcery.ParseSizes(x, y, frame)
 
-    local coords = {[1]=x, [2]=y}
+    local sizes = {[1]=x, [2]=y}
 
-    for i, coord in pairs(coords)do
-        if(type(coord) == "string")then
+    for i, size in pairs(sizes)do
+        if(type(size) == "string")then
 
             local parentFrame = frame:GetParent()
             if(not(parentFrame))then
                 print("|c00ff0000NO PARENT FRAME SET FOR FRAME:", frame:GetName())
             end
-            -- Replace "$parent " (with a space) with "REPLACEMENT_WITH_SPACE"
-            coord = string.gsub(coord, "%$parent%s", select(i, parentFrame:GetSize()) )
-            -- Replace "$parent" at the end of string with "REPLACEMENT"
-            coord = string.gsub(coord, "%$parent$", select(i, parentFrame:GetSize()))
-            -- Replace "$parent" with "REPLACEMENT"
-            coord = string.gsub(coord, "%$parent", parentFrame:GetName())
-           
+            local parentName  = parentFrame:GetName()
+            local calc = ""
+
+            for word in size:gmatch("%S+") do
+                if(  word:find("%$") )then
+                    word = word:gsub("$parent", parentName)
+                    word = word:gsub("%$", "")
+                    calc = calc .. select(i, _G[word]:GetSize()) .. " "
+                else
+                    calc = calc .. word .. " "
+                end
+             end
+
             -- Calculate it
-            calcFunc = loadstring("return "..coord)
-            coords[i] = calcFunc()
+            local calcFunc = loadstring("return "..calc)
+            sizes[i] = calcFunc()
         end
     end
 
-    return coords
+    return sizes
 end
 
 function resourcery.ApplyTableData(newData, frameData)
@@ -117,14 +123,57 @@ function resourcery.ReApplyParents(frame, data)
     local parentFrame = frame
     local subFrame
 
-    for k,d in pairs(data.frames)do
-        subFrame = _G[d.name or k]
-        if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
-            subFrame:SetParent(
-                (_G[d.parent] or parentFrame or UIParent)       
-            )
-            if(d.frames)then
+    if(data.frames)then 
+        -- Frames
+        for k,d in pairs(data.frames)do
+            subFrame = _G[d.name or k]
+            if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
+                subFrame:SetParent(
+                    (_G[d.parent] or parentFrame or UIParent)       
+                )
+               -- if(d.frames)then
                 resourcery.ReApplyParents(subFrame, d)
+                --end
+            end
+        end
+    end
+    -- textures
+    if(data.textures)then 
+        for k,d in pairs(data.textures)do
+            subFrame = _G[d.name or k]
+            if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
+                subFrame:SetParent(
+                    (_G[d.parent] or parentFrame or UIParent)       
+                )
+            end
+        end
+    end
+    -- Strings
+    if(data.strings)then 
+        for k,d in pairs(data.strings)do
+            subFrame = _G[d.name or k]
+            if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
+                subFrame:SetParent(
+                    (_G[d.parent] or parentFrame or UIParent)       
+                )
+            end
+        end
+    end
+    -- TODO: This part moved here until we fix the issue with garbage collection.
+    -- Scripts
+    if(data.scripts and next(data.scripts))then
+        for k,v in pairs(data.scripts) do
+            if(k == "events")then
+                for kk,vv in pairs(v) do
+                    frame:RegisterEvent(vv)
+                end
+            else
+                -- Run function once tied to OnConjure after the frame is created.
+                if(k == "OnConjure")then
+                    v(frame)
+                else
+                    frame:SetScript(k, v)
+                end
             end
         end
     end
@@ -150,18 +199,20 @@ function resourcery.ConstructBase(frame, data, parentData)
             end
             frame:SetParent(data.parent)
         end
-    else
+    else    
         if(data.parent == "$parent" and parentData.name)then
             data.parent = parentData.name
         end
-        frame:SetParent(_G[data.parent] or _G[(parentData and parentData.name)] or UIParent)
+        if(frame:GetName() ~= "UIParent")then
+            frame:SetParent(_G[data.parent] or _G[(parentData and parentData.name)] or UIParent)
+        end
     end
     -- :SetAlpha()
     if(data.alpha) then
         frame:SetAlpha(data.alpha)
     end
     -- :Hide()
-    if(data.hidden)then
+    if(data.hidden or data.hide)then
         frame:Hide()
     end
     -- :SetAllPoints()
@@ -179,32 +230,28 @@ function resourcery.ConstructBase(frame, data, parentData)
     end
     -- :SetPoint()
     if(data.point)then
-        
         if(data.point and data.point['clear'] or data.point and data.point[6])then
             frame:ClearAllPoints()
         end
-
         -- Find $parent and replace it with parent name.
         if( type(data.point['relative_frame']) == "string" and string.find(data.point['relative_frame'], "$parent") )then
             data.point['relative_frame'] = data.point['relative_frame'].gsub(data.point['relative_frame'], "$parent", frame:GetParent():GetName())
         elseif( type(data.point[2]) == "string" and string.find(data.point[2], "$parent")  )then
             data.point[2] = data.point[2].gsub(data.point[2], "$parent", frame:GetParent():GetName())
         end
-
         frame:SetPoint(
-            (data.point['anchor_point'] or data.point[1] or "CENTER"),
+            (data.point['anchor_point'] or data.point[1] or "TOPLEFT"),
             (
                 (type(data.point['relative_frame']) == "string" and _G[data.point['relative_frame']]) 
                 or data.point['relative_frame']
                 or (type(data.point[2]) == "string" and _G[data.point[2]]) 
-                or data.point[2] 
+                or type(data.point[2]) == "table" and data.point[2]
                 or frame:GetParent() 
             ),
-            (data.point['relative_point'] or (type(data.point[3]) == "string" and data.point[3]) or (data.point['anchor_point'] or data.point[1] or "CENTER")),
+            (data.point['relative_point'] or (type(data.point[3]) == "string" and data.point[3]) or (data.point['anchor_point'] or data.point[1] or "TOPLEFT")),
             (data.point['x'] or (type(data.point[2]) == "number" and data.point[2]) or data.point[4] or 0),  
             (data.point['y'] or (type(data.point[3]) == "number" and data.point[3]) or data.point[5] or 0)
         )
-
     else
         if( not(frame:GetPoint()) )then
             frame:SetPoint("TOPLEFT", 0, 0)
@@ -369,19 +416,17 @@ function resourcery.ConstructTypeFrame(frame, data, parentData)
             framePoint[4],
             framePoint[5]
         )
-    else
-        if(parentData and parentData.type == "ScrollFrame" and parentData.name) then
-            local framePoint = {frame:GetPoint()}
-            _G[parentData.name]:SetScrollChild(frame)
-            frame:ClearAllPoints()
-            frame:SetPoint(
-                framePoint[1],
-                framePoint[2],
-                framePoint[3],
-                framePoint[4],
-                framePoint[5]
-            )
-        end
+    elseif(parentData and parentData.type == "ScrollFrame" and parentData.name) then
+        local framePoint = {frame:GetPoint()}
+        _G[parentData.name]:SetScrollChild(frame)
+        frame:ClearAllPoints()
+        frame:SetPoint(
+            framePoint[1],
+            framePoint[2],
+            framePoint[3],
+            framePoint[4],
+            framePoint[5]
+        )
     end
 
 end
@@ -521,7 +566,7 @@ function resourcery.ConstructTypeString(str, data, parentData, isString)
     if(data.font)then
         str:SetFont(
             ( (data.font and data.font["font_file"]) or (data.font and data.font[1]) or "Fonts\\FRIZQT__.TTF"),
-            ( (data.font and data.font["size"]) or (data.font and data.font[2]) or 12),
+            ( (data.font and data.font["size"]) or (data.font and data.font["height"]) or (data.font and data.font[2]) or 12),
             ( (data.font and data.font['flags']) or (data.font and data.font[3]) or "")
         )
     end
@@ -534,13 +579,15 @@ function resourcery.ConstructTypeString(str, data, parentData, isString)
     -- :SetJustifyH()
     if(data.justify_h)then
         str:SetJustifyH(data.justify_h)
+    else
+        str:SetJustifyH("LEFT")
     end
     -- :SetJustifyV()
     if(data.justify_v)then
         str:SetJustifyV(data.justify_v)
     end
     -- :SetTextColor()
-    if(data.color)then
+    if(data.color or data.text_color)then
         str:SetTextColor(
             ( data.color.red   or data.color[1] or 1),
             ( data.color.green or data.color[2] or 1),
@@ -614,10 +661,7 @@ function resourcery.ConstructTypeString(str, data, parentData, isString)
     -- Set size if none were set
     if(data.size == nil) then
         if(parentData ~= nil and parentData.size ~= nil) then
-            str:SetSize(
-                (parentData.size.x or parentData.size[1]),
-                (parentData.size.y or parentData.size[2])
-            )
+            str:SetSize(unpack(resourcery.ParseSizes((parentData.size['x'] or parentData.size[1]), (parentData.size['y'] or parentData.size[2]), str)))
         else
             str:SetSize(
                 (100),
@@ -679,7 +723,7 @@ function resourcery.ConstructTypeButton(frame, data)
         frame:SetDisabledTexture(_G[data.disabled_texture] or data.disabled_texture or data.normal_texture)
     end
     -- :SetFontString()
-    if(data.font) then
+    if(data.font or data.font_string) then
         frame:SetFontString(_G[data.font])
     end
     -- :SetHighlightTexture()
@@ -1128,7 +1172,15 @@ function resourcery.ConjureFrame(data, parentData)
     elseif(data.type == "Slider")then
         resourcery.ConstructTypeSlider(frame, data)
     end
-
+    -- Frames
+    if( data.frames and next(data.frames) )then
+        if(not(frame.frames))then
+            frame.frames = {}
+        end
+        for k, v in pairs(data.frames)do
+            frame.frames[k] = resourcery.ConjureFrame(v, data)
+        end
+    end
     -- Textures
     if( data.textures and next(data.textures) )then
         
@@ -1145,11 +1197,16 @@ function resourcery.ConjureFrame(data, parentData)
             
             if(textureData.name and not(_G[textureData.name]))then
                 frame.textures[k] = frame:CreateTexture(textureData.name) -- I think this causes it
-            elseif( not( _G[data.name.."_Textures_"..k]) and not(_G[textureData.name]) )then
-                frame.textures[k] = frame:CreateTexture(data.name.."_Textures_"..k)
+            elseif( not( _G[data.name.."_"..k]) and not(_G[textureData.name]) )then
+                frame.textures[k] = frame:CreateTexture(data.name.."_"..k)
             end
             local tex = frame.textures[k] 
             
+            if(not(textureData.parent))then
+                textureData.parent = data.name or frame:GetName()
+            end
+
+
             resourcery.ConstructBase(tex, textureData)
             resourcery.ConstructTypeTexture(tex, textureData)
 
@@ -1163,26 +1220,28 @@ function resourcery.ConjureFrame(data, parentData)
         end
 
         for k, strData in pairs(data.strings)do
-            if( not( _G[data.name.."_Strings_"..(strData.name or k)] )) then
-                frame.strings[k] = frame:CreateFontString(data.name.."_Strings_"..(strData.name or k))
+
+            if( not( _G[data.name.."_"..k] )) then
+                if(strData.name and data.name)then
+                    strData.name = strData.name.gsub(strData.name, "$parent", data.name)
+                else
+                    strData.name = data.name.."_"..k
+                end
+                frame.strings[k] = frame:CreateFontString(strData.name)
             end
             local string = frame.strings[k] 
             
+            if(not(strData.parent))then
+                strData.parent = data.name or frame:GetName()
+            end
+
             resourcery.ConstructBase(string, strData)
             resourcery.ConstructTypeString(string, strData, data, true)
         end
 
     end
-    -- Frames
-    if( data.frames and next(data.frames) )then
-        if(not(frame.frames))then
-            frame.frames = {}
-        end
-        for k, v in pairs(data.frames)do
-            frame.frames[k] = resourcery.ConjureFrame(v, data)
-        end
-    end
     -- Scripts
+    --[[TODO: MOVED TO REAPPLY PART FOR NOW, FIX LATER
     if(data.scripts and next(data.scripts))then
         for k,v in pairs(data.scripts) do
             if(k == "events")then
@@ -1199,6 +1258,7 @@ function resourcery.ConjureFrame(data, parentData)
             end
         end
     end
+    ]]
 
     return frame
 end
@@ -1279,6 +1339,7 @@ function resourcery.StartConjuring(frameData, overwriteData)
             newData = resourcery.ApplyTableData(overwriteData, newData)
         end
         frame = resourcery.ConjureFrame(newData)
+        -- TODO: Do a proper fix
         -- Attempt to fix problem caused by what I assume is Blizzard's garbage collecter.
         resourcery.ReApplyParents(frame, newData)
     end
@@ -1288,7 +1349,6 @@ end
 
 -- TODO: Add OnConjure explanation on github etc
 -- TODO: Add template true explanation to github
--- TODO: Add newly supported frame objects to github
 -- TODO: Add frame culler feature text, mouse drag, scroll zoom, scroll move
 
 -- TODO: SetAllPoints, add string _G thingy and test it
@@ -1296,3 +1356,6 @@ end
 
 -- TODO: Check GetEffectiveScale out of bounds for container frame etc
     -- Check if : is after $parent?
+
+-- TODO: In the future:
+    -- Create all frames, strings, textures etc before applying the settings to them.
