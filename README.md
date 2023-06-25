@@ -1,5 +1,5 @@
 # Resourcery
-A framework prototype (for wotlk 3.3.5)
+A framework for wotlk 3.3.5
 
 ![resoucery](https://user-images.githubusercontent.com/97316608/212414504-04eb15e7-b912-4d77-b372-be024c9b4d57.png)  
 
@@ -16,6 +16,12 @@ Video:
 - Frame
 - Texture
 - Button
+- CheckButton
+- EditBox
+- Model
+- PlayerModel
+- ScrollFrame
+- Slider
 - FontString  
   
 **Other features are:**  
