@@ -289,6 +289,20 @@ frameData={
       }
   }
 }
+```  
+#### OnConjure  
+Run attached function when frame is created, example:
+```lua
+button={
+   templates={"blizz_button"},
+   
+   scripts={
+      OnConjure=function()
+         local color = (UnitClass("player") == "Paladin" and "|c00F48CBA" or "|c00C69B6D")
+         print("Class is:"..color, UnitClass("player"))
+      end,
+   }
+}
 ```
   
 ### AIO Usage
