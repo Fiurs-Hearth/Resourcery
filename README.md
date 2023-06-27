@@ -335,4 +335,10 @@ frameData={
 ```  
 This will make the frame moveable. Also works with using `clamped` and its values.  
   
-If you use `disabled = true` then you can temporarily disable a frame or a texture.
+If you use `disabled = true` then you can temporarily disable a frame or a texture.  
+
+If you add `true` after a template then you don't inherit that template's templates, for example:
+```lua
+ templates={"basic_window", true},
+   name="test",
+```
