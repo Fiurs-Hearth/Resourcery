@@ -325,6 +325,34 @@ You can NOT add functions through the AIO method (at least to my knowledge).
 One option is to create the functions before and add that function to a template and then add it to the client's patch.  
 I have done this with the function: `resourcery.StartServerCountdown()`.  
   
+### ScrollFrame & Container templates
+#### ScrollFrame
+These scrollframes comes with different types of sliders or no sliders at all and they all come with a container frame you parent frames to.  
+  
+A list of different scrollframe templates, left column is the same as the right column.  
+```
+scrollframe_1	  scrollframe							
+scrollframe_2	  scrollframe_no_buttons				
+scrollframe_3	  scrollframe_horizontal				
+scrollframe_4	  scrollframe_horizontal_no_buttons	
+scrollframe_5	  scrollframe_horizontal_rotated		
+scrollframe_6	  scrollframe_sliders					
+scrollframe_7	  scrollframe_sliders_horizontal_rotated		
+scrollframe_8	  scrollframe_sliders_no_buttons				
+scrollframe_9	  scrollframe_sliders_horizontal_no_buttons	
+scrollframe_10	scrollframe_sliders_vertical_no_buttons		
+scrollframe_11	scrollframe_sliders_vertical_no_buttons_horizontal_rotated	
+scrollframe_12	scrollframe_no_sliders		
+```
+
+#### Container  
+The container frame is the frame you want to set as parent to frames who will be inside of the scrollframe.  
+
+A list of different container templates with scripts.  
+```
+
+```
+  
 ### Extra attributes
 There are some extra attributes you can use when writing data for a frame.  
 For example:  
