@@ -390,11 +390,11 @@ scrollframe={
                -- Same as up
             }
          }
-      },
-      texture={
-         thumb={
-            texture="Interface/BUTTONS/UI-Quickslot-Depress.blp"
-         }
+         texture={
+            thumb={
+               texture="Interface/BUTTONS/UI-Quickslot-Depress.blp"
+            }
+         },
       },
       slider_horizontal={
          -- Same as slider
