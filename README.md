@@ -9,8 +9,9 @@ With Resourcery you can create Lua templates, more or less the same as the XML t
   
 As this is a prototype, not all frame types are supported (yet).  
   
-Video:  
-[Resourcery Video](https://www.youtube.com/watch?v=WQJALHQe2Cc)  
+Videos:  
+[Resourcery Prototype Release](https://www.youtube.com/watch?v=WQJALHQe2Cc)  
+[Resourcery v0.5 Release](https://www.youtube.com/watch?v=boX92JL-FpU)  
 
 **Supported frame types currently are:**  
 - Frame
