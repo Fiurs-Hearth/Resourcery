@@ -123,15 +123,20 @@ function resourcery.ReApplyParents(frame, data)
     local parentFrame = frame
     local subFrame
 
+    if(data.child_to)then
+        parentFrame:GetParent():SetScrollChild(parentFrame)
+    end
+
     if(data.frames)then 
         -- Frames
         for k,d in pairs(data.frames)do
             subFrame = _G[d.name or k]
             if(subFrame)then -- Will be false if there is data but no frame. (Can happen if the data is empty.)
+
                 subFrame:SetParent(
                     (_G[d.parent] or parentFrame or UIParent)       
                 )
-               -- if(d.frames)then
+                -- if(d.frames)then
                 resourcery.ReApplyParents(subFrame, d)
                 --end
             end
@@ -1305,6 +1310,7 @@ function resourcery.PrepareFrame(newData, frameData)
         end
     end
 
+    -- Apply duplicate string settings 
     if(newData.strings and next(newData.strings)) then
         for k, stringData in pairs(newData.strings) do
             if(stringData.duplicate) then
