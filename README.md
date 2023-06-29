@@ -1,5 +1,5 @@
 # Resourcery
-A framework prototype (for wotlk 3.3.5)
+A framework for wotlk 3.3.5
 
 ![resoucery](https://user-images.githubusercontent.com/97316608/212414504-04eb15e7-b912-4d77-b372-be024c9b4d57.png)  
 
@@ -9,13 +9,20 @@ With Resourcery you can create Lua templates, more or less the same as the XML t
   
 As this is a prototype, not all frame types are supported (yet).  
   
-Video:  
-[Resourcery Video](https://www.youtube.com/watch?v=WQJALHQe2Cc)  
+Videos:  
+[Resourcery Prototype Release](https://www.youtube.com/watch?v=WQJALHQe2Cc)  
+[Resourcery v0.5 Release](https://www.youtube.com/watch?v=boX92JL-FpU)  
 
 **Supported frame types currently are:**  
 - Frame
 - Texture
 - Button
+- CheckButton
+- EditBox
+- Model
+- PlayerModel
+- ScrollFrame
+- Slider
 - FontString  
   
 **Other features are:**  
@@ -283,6 +290,25 @@ frameData={
       }
   }
 }
+```  
+#### OnConjure  
+Run attached function when frame is created, example:
+```lua
+local button={
+   templates={"blizz_button"},
+   name="button_example",
+   
+   point={"CENTER"},
+   
+   scripts={
+      OnConjure=function(self)
+         local color = (UnitClass("player") == "Paladin" and "|c00F48CBA" or "|c00C69B6D")
+         self:SetText(color.."Button")
+      end,
+      OnLeave=myFunction
+   }
+}
+resourcery.StartConjuring(button)
 ```
   
 ### AIO Usage
@@ -305,6 +331,116 @@ You can NOT add functions through the AIO method (at least to my knowledge).
 One option is to create the functions before and add that function to a template and then add it to the client's patch.  
 I have done this with the function: `resourcery.StartServerCountdown()`.  
   
+### ScrollFrame & Container templates  
+Watch the [Video](https://www.youtube.com/watch?v=boX92JL-FpU) to see what the different templates do
+#### ScrollFrame
+These scrollframes comes with different types of sliders or no sliders at all and they all come with a container frame you parent frames to.  
+  
+A list of different scrollframe templates, left column is the same as the right column.  
+```
+scrollframe_1	  scrollframe							
+scrollframe_2	  scrollframe_no_buttons				
+scrollframe_3	  scrollframe_horizontal				
+scrollframe_4	  scrollframe_horizontal_no_buttons	
+scrollframe_5	  scrollframe_horizontal_rotated		
+scrollframe_6	  scrollframe_sliders					
+scrollframe_7	  scrollframe_sliders_horizontal_rotated		
+scrollframe_8	  scrollframe_sliders_no_buttons				
+scrollframe_9	  scrollframe_sliders_horizontal_no_buttons	
+scrollframe_10	  scrollframe_sliders_vertical_no_buttons		
+scrollframe_11	  scrollframe_sliders_vertical_no_buttons_horizontal_rotated	
+scrollframe_12	  scrollframe_no_sliders		
+```
+
+#### Container  
+The container frame is the frame you want to set as parent to frames who will be inside of the scrollframe.  
+
+A list of different container templates with scripts, left column is the same as the right column.
+```
+container_1      container_basic / container_drag_scroll / container_scroll_drag	
+container_2	 container_scroll		
+container_3	 container_drag			
+container_4	 container_zoom			
+container_5	 container_drag_zoom / container_zoom_drag
+```
+  
+### Template structures  
+The structure for the different templates related to scrollframe, container and sliders.  
+Relevant if you want to edit the templates.  
+```lua
+scrollframe={
+   type="Frame",
+ 
+   frames={
+      slider={
+         type="Frame",
+
+         backdrop={
+            bg_file="Interface/CHATFRAME/CHATFRAMEBACKGROUND.blp",
+            edge_file="Interface/Tooltips/UI-Tooltip-Border",
+            edge_size=16,
+            insets={3,3,3,3}
+         },
+         frames={
+            up={
+               type="Button",
+               normal_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Up.blp",
+               disabled_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Disabled.blp",
+            },
+            down={
+               -- Same as up
+            }
+         }
+         textures={
+            thumb={
+               texture="Interface/BUTTONS/UI-Quickslot-Depress.blp"
+            }
+         },
+      },
+      slider_horizontal={
+         -- Same as slider
+         frames={
+            left={
+               -- Same as up
+            },
+            right={
+               -- Same as up
+            }
+         },
+         textures={
+            -- Same as thumb
+         }
+      },
+      container={
+         type="Frame"
+      }
+   }
+}
+```
+
+  
+#### Example
+Here is an example that creates a basic window with a scrollframe and slider.  
+The scripts attached to the container frame lets you scroll up, down and drag the frame by holding and moving your mouse.
+```lua
+local data={
+   templates={"basic_window"},
+   name="scroll_frame_example",
+   point={"CENTER", -300},
+   
+   frames={
+      scrollframe={
+         templates={"scrollframe_1", "container_drag_scroll"},
+         size={"$parent - 86", "$parent - 156"},
+         
+         name="$parent_scrollframe",
+         point={x=20, y=-74},
+      }
+   }
+}
+resourcery.StartConjuring(data)
+```
+  
 ### Extra attributes
 There are some extra attributes you can use when writing data for a frame.  
 For example:  
@@ -315,4 +451,10 @@ frameData={
 ```  
 This will make the frame moveable. Also works with using `clamped` and its values.  
   
-If you use `disabled = true` then you can temporarily disable a frame or a texture.
+If you use `disabled = true` then you can temporarily disable a frame or a texture.  
+
+If you add `true` after a template then you don't inherit that template's templates, for example:
+```lua
+ templates={"basic_window", true},
+   name="test",
+```
