@@ -331,7 +331,7 @@ One option is to create the functions before and add that function to a template
 I have done this with the function: `resourcery.StartServerCountdown()`.  
   
 ### ScrollFrame & Container templates  
-Watch the [Video](https://www.youtube.com/watch?v=WQJALHQe2Cc) to see what the different templates do
+Watch the [Video](https://www.youtube.com/watch?v=boX92JL-FpU) to see what the different templates do
 #### ScrollFrame
 These scrollframes comes with different types of sliders or no sliders at all and they all come with a container frame you parent frames to.  
   
@@ -362,6 +362,61 @@ container_3	 container_drag
 container_4	 container_zoom			
 container_5	 container_drag_zoom / container_zoom_drag
 ```
+  
+### Template structures  
+The structure for the different templates related to scrollframe, container and sliders.  
+Relevant if you want to edit the templates.  
+```lua
+scrollframe={
+   type="Frame",
+ 
+   frames={
+      slider={
+         type="Frame",
+
+         backdrop={
+            bg_file="Interface/CHATFRAME/CHATFRAMEBACKGROUND.blp",
+            edge_file="Interface/Tooltips/UI-Tooltip-Border",
+            edge_size=16,
+            insets={3,3,3,3}
+         },
+         frames={
+            up={
+               type="Button",
+               normal_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Up.blp",
+               disabled_texture="Interface/BUTTONS/UI-ScrollBar-ScrollUpButton-Disabled.blp",
+            },
+            down={
+               -- Same as up
+            }
+         }
+      },
+      texture={
+         thumb={
+            texture="Interface/BUTTONS/UI-Quickslot-Depress.blp"
+         }
+      },
+      slider_horizontal={
+         -- Same as slider
+         frames={
+            left={
+               -- Same as up
+            },
+            right={
+               -- Same as up
+            }
+         },
+         texture={
+            -- Same as thumb
+         }
+      },
+      container={
+         type="Frame"
+      }
+   }
+}
+```
+
   
 #### Example
 Here is an example that creates a basic window with a scrollframe and slider.  
