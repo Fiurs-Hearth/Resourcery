@@ -1346,16 +1346,3 @@ function resourcery.StartConjuring(frameData, overwriteData)
 
     return frame
 end
-
--- TODO: Add OnConjure explanation on github etc
--- TODO: Add template true explanation to github
--- TODO: Add frame culler feature text, mouse drag, scroll zoom, scroll move
-
--- TODO: SetAllPoints, add string _G thingy and test it
--- TODO: child_to before SetPoint so we can set its point, also do a clear all points beforehand?
-
--- TODO: Check GetEffectiveScale out of bounds for container frame etc
-    -- Check if : is after $parent?
-
--- TODO: In the future:
-    -- Create all frames, strings, textures etc before applying the settings to them.
