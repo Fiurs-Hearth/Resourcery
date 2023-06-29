@@ -293,16 +293,21 @@ frameData={
 #### OnConjure  
 Run attached function when frame is created, example:
 ```lua
-button={
+local button={
    templates={"blizz_button"},
+   name="button_example",
+   
+   point={"CENTER"},
    
    scripts={
-      OnConjure=function()
+      OnConjure=function(self)
          local color = (UnitClass("player") == "Paladin" and "|c00F48CBA" or "|c00C69B6D")
-         print("Class is:"..color, UnitClass("player"))
+         self:SetText(color.."Button")
       end,
+      OnLeave=myFunction
    }
 }
+resourcery.StartConjuring(button)
 ```
   
 ### AIO Usage
