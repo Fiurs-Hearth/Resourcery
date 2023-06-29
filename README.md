@@ -356,7 +356,7 @@ The container frame is the frame you want to set as parent to frames who will be
 
 A list of different container templates with scripts, left column is the same as the right column.
 ```
-container_1    container_basic / container_drag_scroll / container_scroll_drag	
+container_1      container_basic / container_drag_scroll / container_scroll_drag	
 container_2	 container_scroll		
 container_3	 container_drag			
 container_4	 container_zoom			
