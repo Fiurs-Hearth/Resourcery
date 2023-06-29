@@ -390,7 +390,7 @@ scrollframe={
                -- Same as up
             }
          }
-         texture={
+         textures={
             thumb={
                texture="Interface/BUTTONS/UI-Quickslot-Depress.blp"
             }
@@ -406,7 +406,7 @@ scrollframe={
                -- Same as up
             }
          },
-         texture={
+         textures={
             -- Same as thumb
          }
       },
