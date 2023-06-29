@@ -346,9 +346,9 @@ scrollframe_6	  scrollframe_sliders
 scrollframe_7	  scrollframe_sliders_horizontal_rotated		
 scrollframe_8	  scrollframe_sliders_no_buttons				
 scrollframe_9	  scrollframe_sliders_horizontal_no_buttons	
-scrollframe_10	scrollframe_sliders_vertical_no_buttons		
-scrollframe_11	scrollframe_sliders_vertical_no_buttons_horizontal_rotated	
-scrollframe_12	scrollframe_no_sliders		
+scrollframe_10	  scrollframe_sliders_vertical_no_buttons		
+scrollframe_11	  scrollframe_sliders_vertical_no_buttons_horizontal_rotated	
+scrollframe_12	  scrollframe_no_sliders		
 ```
 
 #### Container  
@@ -356,13 +356,14 @@ The container frame is the frame you want to set as parent to frames who will be
 
 A list of different container templates with scripts, left column is the same as the right column.
 ```
-container_1  container_basic / container_drag_scroll / container_scroll_drag	
+container_1    container_basic / container_drag_scroll / container_scroll_drag	
 container_2	 container_scroll		
 container_3	 container_drag			
 container_4	 container_zoom			
 container_5	 container_drag_zoom / container_zoom_drag
 ```
-
+  
+#### Example
 Here is an example that creates a basic window with a scrollframe and slider.  
 The scripts attached to the container frame lets you scroll up, down and drag the frame by holding and moving your mouse.
 ```lua
