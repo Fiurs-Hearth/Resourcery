@@ -420,21 +420,29 @@ scrollframe={
 
   
 #### Example
+![image](https://github.com/Fiurs-Hearth/Resourcery/assets/97316608/279f215b-2f70-43e7-bca9-b93b5117fb17)  
+
 Here is an example that creates a basic window with a scrollframe and slider.  
 The scripts attached to the container frame lets you scroll up, down and drag the frame by holding and moving your mouse.
 ```lua
 local data={
    templates={"basic_window"},
+   
    name="scroll_frame_example",
    point={"CENTER", -300},
    
    frames={
       scrollframe={
          templates={"scrollframe_1", "container_drag_scroll"},
-         size={"$parent - 86", "$parent - 156"},
          
-         name="$parent_scrollframe",
+         size={"$parent - 86", "$parent - 156"},
          point={x=20, y=-74},
+         
+         vars={
+            values={
+               y=0
+            }
+         },
       }
    }
 }
