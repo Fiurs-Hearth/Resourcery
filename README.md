@@ -429,7 +429,6 @@ local data={
    templates={"basic_window"},
    
    name="scroll_frame_example",
-   point={"CENTER", -300},
    
    frames={
       scrollframe={
