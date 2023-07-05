@@ -11,7 +11,7 @@ As this is a prototype, not all frame types are supported (yet).
   
 Videos:  
 [Resourcery Prototype Release](https://www.youtube.com/watch?v=WQJALHQe2Cc)  
-[Resourcery v0.5 Release](https://www.youtube.com/watch?v=boX92JL-FpU)  
+[Resourcery v0.5 Release](https://youtu.be/ypaF7zl2pfo)  
 
 **Supported frame types currently are:**  
 - Frame
@@ -332,7 +332,7 @@ One option is to create the functions before and add that function to a template
 I have done this with the function: `resourcery.StartServerCountdown()`.  
   
 ### ScrollFrame & Container templates  
-Watch the [Video](https://www.youtube.com/watch?v=boX92JL-FpU) to see what the different templates do
+Watch the [Video](https://youtu.be/ypaF7zl2pfo) to see what the different templates do
 #### ScrollFrame
 These scrollframes comes with different types of sliders or no sliders at all and they all come with a container frame you parent frames to.  
   
